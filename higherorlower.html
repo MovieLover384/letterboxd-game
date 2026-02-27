@@ -198,6 +198,7 @@ function makeGuess(higher) {
     document.getElementById('lowerBtn').disabled = true;
     const resultDiv = document.getElementById('result');
     const actualHigher = rightUser.stats.this_year >= leftUser.stats.this_year;
+
     if ((higher && actualHigher) || (!higher && !actualHigher)) {
         score++;
         document.getElementById('score').innerText = `Score: ${score}`;
@@ -205,10 +206,11 @@ function makeGuess(higher) {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         slideRightToLeft();
     } else {
+        const finalScore = score;
+        resultDiv.innerText = `Wrong! ${rightUser.username} watched ${rightUser.stats.this_year} this year.\nFinal Score: ${finalScore}`;
+        document.getElementById('nextBtnContainer').classList.remove('hidden');
         score = 0;
         document.getElementById('score').innerText = `Score: ${score}`;
-        resultDiv.innerText = `Wrong! ${rightUser.username} watched ${rightUser.stats.this_year} this year.`;
-        document.getElementById('nextBtnContainer').classList.remove('hidden');
     }
 }
 
