@@ -135,11 +135,16 @@ function startNewGame() {
     currentMovie = newMovie;
     usedReviews = [];
     wrongGuesses = 0;
+
     document.getElementById("reviewsContainer").innerHTML = "";
     document.getElementById("movieSearch").value = "";
     document.getElementById("suggestions").innerHTML = "";
     document.getElementById("result").innerHTML = "";
-    document.getElementById("correctMovie").classList.add("hidden");
+    
+    const correctDiv = document.getElementById("correctMovie");
+    correctDiv.classList.add("hidden");
+    correctDiv.innerHTML = "";
+
     showNextReview();
 }
 
