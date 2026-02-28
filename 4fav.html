@@ -109,11 +109,23 @@ let users = [];
 let currentUser = null;
 let previousUser = null;
 let correctAnswer = "";
+let allMoviesList = [];
 
 async function loadUsers() {
     const res = await fetch("4fav.json");
     users = await res.json();
+    buildAllMoviesList();
     startNewGame();
+}
+
+function buildAllMoviesList() {
+    const movieSet = new Set();
+    users.forEach(user => {
+        user.favorites.forEach(movie => {
+            movieSet.add(movie.title);
+        });
+    });
+    allMoviesList = Array.from(movieSet);
 }
 
 function startNewGame() {
@@ -170,7 +182,7 @@ searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim().toLowerCase();
     suggestionsBox.innerHTML = "";
     if (query.length < 1) return;
-    const allMovies = currentUser.favorites.map(m => m.title);
+    const allMovies = allMoviesList;
     const filtered = allMovies.filter(title => title.toLowerCase().includes(query));
     filtered.slice(0,5).forEach(title => {
         const div = document.createElement("div");
