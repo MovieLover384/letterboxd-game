@@ -6,7 +6,7 @@
 <title>Fake Favorite</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="4fav.css?v=1.1">
+<link rel="stylesheet" href="4fav.css?v=1.2">
 </head>
 
 <body class="flex flex-col min-h-screen">
@@ -134,42 +134,36 @@ function displayMovies(movies) {
 
   movies.forEach((movie, index) => {
     const card = document.createElement("div");
-    card.className = "card-wrapper text-center cursor-pointer";
-    card.dataset.index = index;
+    card.className = "card-wrapper text-center cursor-pointer flex flex-col items-center";
 
-      card.innerHTML = `
-        <div class="flex flex-col items-center h-full">
+    card.innerHTML = `
+      <div class="flex flex-col items-center h-full">
 
-          <!-- TITLE (always visible) -->
-            <div class="movie-title
-                        text-sm sm:text-base md:text-lg
-                        font-semibold
-                        text-white
-                        text-center
-                        leading-tight
-                        px-2
-                        h-[3.2rem]
-                        overflow-hidden
-                        flex items-center justify-center">
-              ${movie.title}
-            </div>
-
-          <!-- POSTER -->
-          <div class="card mt-2 w-full">
-            <img src="${movie.poster_url}" 
-                class="rounded-lg shadow-lg w-full object-cover">
-          </div>
-
-          <!-- RESULT LABEL (hidden until click) -->
-          <div class="movie-label 
-                      text-lg font-bold 
-                      mt-2 
-                      min-h-[24px] 
-                      text-white">
-          </div>
-
+        <!-- TITLE (auto height, max 2 lines) -->
+        <div class="movie-title
+                    text-sm sm:text-base md:text-lg
+                    font-semibold
+                    text-white
+                    text-center
+                    px-2
+                    mb-2
+                    line-clamp-2
+                    overflow-hidden
+                    min-h-[3rem]">
+          ${movie.title}
         </div>
-      `;
+
+        <!-- POSTER (fixed size so all align) -->
+        <div class="card w-full flex-shrink-0">
+          <img src="${movie.poster_url}" 
+               class="rounded-lg shadow-lg w-full object-cover h-48 md:h-56 lg:h-64">
+        </div>
+
+        <!-- RESULT LABEL (hidden until click) -->
+        <div class="movie-label text-lg font-bold mt-2 min-h-[24px] text-white"></div>
+
+      </div>
+    `;
 
     card.addEventListener("click", () => handleGuess(index));
     grid.appendChild(card);
