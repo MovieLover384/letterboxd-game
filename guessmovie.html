@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess the Movie</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="4fav.css">
+</head>
+<body class="flex flex-col min-h-screen">
+
+<header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-white">
+          <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/>
+        </svg>
+      </div>
+      <span class="text-xl font-serif font-bold">
+        Letterboxd <span class="text-gradient-accent">Games</span>
+      </span>
+    </a>
+    <nav class="flex items-center gap-6">
+      <a href="/letterboxd-game/" class="hover:text-white transition">Home</a>
+      <a href="/letterboxd-game/info" class="hover:text-white transition">Info</a>
+    </nav>
+  </div>
+</header>
+
+<section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
+  <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <h1 class="text-5xl md:text-6xl font-bold mb-4">Guess the <span class="text-gradient-accent">Movie</span></h1>
+    <p class="text-lg md:text-xl text-gray-400">We'll show you info about a movie. Can you guess which movie it is?</p>
+  </div>
+</section>
+
+<section class="container mx-auto px-4 py-12 flex-1">
+  <div id="infoContainer" class="flex flex-col gap-4 mb-6"></div>
+
+  <div class="text-center mb-6 flex justify-center gap-4">
+    <button id="plotBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 font-semibold rounded-lg transition">
+      Get Plot
+    </button>
+    <button id="charactersBtn" class="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 font-semibold rounded-lg transition">
+      Get Characters
+    </button>
+  </div>
+
+  <div class="max-w-md mx-auto mb-6 relative">
+    <input 
+      type="text" 
+      id="movieSearch" 
+      placeholder="Search for a movie..." 
+      class="w-full p-3 rounded-lg border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+      style="background-color: var(--film-surface);"
+    >
+    <div 
+      id="suggestions" 
+      class="absolute top-full left-0 right-0 rounded-b-lg mt-1 max-h-60 overflow-y-auto z-20 border border-gray-700"
+      style="background-color: var(--film-surface);"
+    ></div>
+  </div>
+
+  <div class="text-center mb-6 flex flex-col sm:flex-row justify-center gap-4">
+      <button id="guessBtn" class="bg-green-500 hover:bg-green-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Submit Guess</button>
+      <button id="giveUpBtn" class="bg-red-500 hover:bg-red-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Give Up</button>
+  </div>
+
+  <div id="result" class="text-center text-lg font-semibold mb-6"></div>
+
+  <div id="correctMovie" class="hidden flex flex-col items-center gap-4 mb-6"></div>
+
+  <div class="text-center">
+    <button id="playAgainBtn" class="bg-orange-500 hover:bg-orange-600 text-black px-5 py-2 font-semibold rounded-lg transition">Play Again</button>
+  </div>
+</section>
+
+<footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
+  <h3 class="text-orange-500 mb-2">
+    Letterboxd Games ~ Fan project, Not affiliated with Letterboxd
+  </h3>
+  <p class="text-gray-400 mb-1 flex items-center justify-center gap-2">
+    Made with
+    <svg width="18" height="18" viewBox="0 0 24 24" class="inline-block">
+      <defs>
+        <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="hsl(25,95%,55%)"/>
+          <stop offset="100%" stop-color="hsl(35,90%,60%)"/>
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+           2 6 4 4 6.5 4 
+           8.24 4 9.91 5.01 10.44 6.36 
+           10.97 5.01 12.64 4 14.38 4 
+           16.88 4 18.88 6 18.88 8.5 
+           18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z"
+        fill="url(#heartGradient)"
+      />
+    </svg>
+    for film lovers
+  </p>
+  <p class="text-gray-400">
+    Follow me on 
+    <a href="https://letterboxd.com/MovieLover384/" target="_blank" class="text-orange-500 hover:text-orange-400 underline">
+      Letterboxd
+    </a>
+  </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+let movies = [];
+let currentMovie = null;
+let previousMovie = null;
+let wrongGuesses = 0;
+const maxWrong = 3;
+
+async function loadMovies() {
+    const res = await fetch("guessmovie.json");
+    const data = await res.json();
+    movies = data;
+    pickMovie();
+}
+
+function pickMovie() {
+    let newMovie;
+    do {
+        newMovie = movies[Math.floor(Math.random() * movies.length)];
+    } while(previousMovie && newMovie.title === previousMovie.title && movies.length > 1);
+
+    previousMovie = newMovie;
+    currentMovie = newMovie;
+    wrongGuesses = 0;
+
+    document.getElementById("infoContainer").innerHTML = "";
+    document.getElementById("movieSearch").value = "";
+    document.getElementById("suggestions").innerHTML = "";
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("correctMovie").classList.add("hidden");
+    document.getElementById("correctMovie").innerHTML = "";
+
+    showMovieInfo();
+}
+
+const plotBtn = document.getElementById("plotBtn");
+const charactersBtn = document.getElementById("charactersBtn");
+
+plotBtn.addEventListener("click", () => {
+    if (!currentMovie) return;
+    const infoContainer = document.getElementById("infoContainer");
+
+    if (document.getElementById("plotHint")) return;
+
+    const plotDiv = document.createElement("div");
+    plotDiv.id = "plotHint";
+    plotDiv.className = "bg-gray-700/60 p-4 rounded-lg border border-gray-600 shadow-sm text-left flex flex-col gap-2 mt-2";
+
+    plotDiv.innerHTML = `
+        <p><strong>Plot Summary:</strong> ${currentMovie.plot_summary}</p>
+    `;
+
+    infoContainer.appendChild(plotDiv);
+    plotDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+});
+
+charactersBtn.addEventListener("click", () => {
+    if (!currentMovie) return;
+    const infoContainer = document.getElementById("infoContainer");
+
+    if (document.getElementById("charactersHint")) return;
+
+    const charDiv = document.createElement("div");
+    charDiv.id = "charactersHint";
+    charDiv.className = "bg-gray-700/60 p-4 rounded-lg border border-gray-600 shadow-sm text-left flex flex-col gap-2 mt-2";
+
+    charDiv.innerHTML = `
+        <p><strong>Characters:</strong> ${currentMovie.characters.join(", ")}</p>
+    `;
+
+    infoContainer.appendChild(charDiv);
+    charDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+});
+
+function showMovieInfo() {
+    const infoContainer = document.getElementById("infoContainer");
+    const div = document.createElement("div");
+    div.className = "bg-gray-800/70 p-4 rounded-lg border border-gray-700 shadow-sm text-left flex flex-col gap-2";
+
+    div.innerHTML = `
+        <p><strong>Year:</strong> ${currentMovie.year}</p>
+        <p><strong>Genres:</strong> ${currentMovie.genres.join(", ")}</p>
+        <p><strong>Director:</strong> ${currentMovie.director}</p>
+        <p><strong>Main Cast:</strong> ${currentMovie.cast.join(", ")}</p>
+        <p><strong>Runtime:</strong> ${currentMovie.runtime}</p>
+    `;
+    infoContainer.appendChild(div);
+    div.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+const searchInput = document.getElementById("movieSearch");
+const suggestionsBox = document.getElementById("suggestions");
+
+searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim();
+    suggestionsBox.innerHTML = "";
+    if (query.length < 2) return;
+
+    const filtered = movies.filter(m => m.title.toLowerCase().includes(query.toLowerCase())).slice(0,5);
+    filtered.forEach(movie => {
+        const div = document.createElement("div");
+        div.className = "p-3 cursor-pointer hover:bg-green-600 hover:text-black rounded";
+        div.textContent = movie.title;
+        div.onclick = () => {
+            searchInput.value = movie.title;
+            suggestionsBox.innerHTML = "";
+        };
+        suggestionsBox.appendChild(div);
+    });
+});
+
+function revealCorrectMovie(showConfetti = true) {
+    const correctDiv = document.getElementById("correctMovie");
+    correctDiv.innerHTML = `
+        <h3 class="text-2xl font-bold text-gradient-accent">Correct Movie:</h3>
+        <div class="card p-3 w-64">
+            <img src="${currentMovie.poster_url}" alt="${currentMovie.title}" class="w-full rounded-lg mb-2">
+            <p class="font-semibold text-white text-center">${currentMovie.title}</p>
+        </div>
+    `;
+    correctDiv.classList.remove("hidden");
+    if (showConfetti) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    }
+}
+
+document.getElementById("guessBtn").addEventListener("click", () => {
+    const guess = searchInput.value.trim().toLowerCase();
+    const correct = currentMovie.title.toLowerCase();
+    const result = document.getElementById("result");
+
+    if (!guess) {
+        result.innerHTML = "You need to enter a movie before submitting";
+        result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+        return;
+    }
+
+    if (guess === correct || correct.includes(guess)) {
+        result.innerHTML = "Correct!";
+        result.className = "text-green-400 text-lg font-semibold mb-4 text-center";
+        revealCorrectMovie();
+    } else {
+        wrongGuesses++;
+        if (wrongGuesses >= maxWrong) {
+            result.innerHTML = `Wrong! You've reached ${maxWrong} wrong guesses.`;
+            result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+            revealCorrectMovie(false);
+        } else {
+            result.innerHTML = `Wrong! Try again (${wrongGuesses}/${maxWrong})`;
+            result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+        }
+    }
+});
+
+document.getElementById("giveUpBtn").addEventListener("click", () => {
+    const result = document.getElementById("result");
+    result.innerHTML = "You gave up!";
+    result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+    revealCorrectMovie(false);
+});
+
+document.getElementById("playAgainBtn").addEventListener("click", () => {
+    pickMovie();
+});
+
+loadMovies();
+</script>
+</body>
+</html>
