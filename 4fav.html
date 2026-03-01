@@ -37,7 +37,8 @@
 </section>
 
 <section class="container mx-auto px-4 py-12 flex-1">
-  <div id="username" class="text-2xl md:text-3xl font-serif font-bold text-gradient-accent mb-8 text-center"></div>
+  <div id="username" class="text-2xl md:text-3xl font-serif font-bold text-gradient-accent mb-2 text-center"></div>
+  <div id="yearHint" class="text-lg md:text-xl text-gray-400 mb-4 text-center"></div>
 
   <div id="favorites" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-10 justify-center max-w-5xl mx-auto"></div>
 
@@ -122,7 +123,7 @@ function buildAllMoviesList() {
     const movieSet = new Set();
     users.forEach(user => {
         user.favorites.forEach(movie => {
-            movieSet.add(movie.title);
+            movieSet.add(movie.title); // keep full title with year for display
         });
     });
     allMoviesList = Array.from(movieSet);
@@ -143,6 +144,7 @@ function startNewGame() {
     const correctMovieDiv = document.getElementById("correctMovie");
     correctMovieDiv.innerHTML = "";
     correctMovieDiv.classList.add("hidden");
+    document.getElementById("yearHint").innerHTML = `Hint: Released in ${currentUser.favorites[0].title.match(/\((\d{4})\)/)[1]}`;
 
     displayFavorites();
 }
@@ -182,12 +184,12 @@ searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim().toLowerCase();
     suggestionsBox.innerHTML = "";
     if (query.length < 1) return;
-    const allMovies = allMoviesList;
-    const filtered = allMovies.filter(title => title.toLowerCase().includes(query));
+    if (/^\d+$/.test(query)) return; // ignore numeric-only queries
+    const filtered = allMoviesList.filter(title => title.toLowerCase().includes(query));
     filtered.slice(0,5).forEach(title => {
         const div = document.createElement("div");
         div.className = "p-3 cursor-pointer hover:bg-orange-600 hover:text-black rounded";
-        div.textContent = title;
+        div.textContent = title; // full title with year
         div.onclick = () => {
             searchInput.value = title;
             suggestionsBox.innerHTML = "";
