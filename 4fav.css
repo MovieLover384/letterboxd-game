@@ -124,3 +124,15 @@ h1,h2,h3,h4 {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+#posterToggle:checked + span {
+  background-color: hsl(25, 36%, 49%);
+}
+
+#posterToggle:checked + span + #toggleThumb {
+  transform: translateX(100%);
+}
+
+#toggleThumb {
+  transition: transform 0.3s ease;
+}

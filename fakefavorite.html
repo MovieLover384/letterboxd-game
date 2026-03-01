@@ -7,8 +7,18 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="4fav.css?v=1.2">
+<style>
+#posterToggle:checked + span {
+  background-color: hsl(25,95%,55%);
+}
+#posterToggle:checked + span + #toggleThumb {
+  transform: translateX(100%);
+}
+#toggleThumb {
+  transition: transform 0.3s ease;
+}
+</style>
 </head>
-
 <body class="flex flex-col min-h-screen">
 
 <header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
@@ -41,19 +51,24 @@
   </div>
 </section>
 
+<div class="bg-film-surface/90 backdrop-blur-md border-b border-gray-800 py-3 px-6 flex justify-end items-center">
+  <span class="text-white mr-3">Allow Custom Posters:</span>
+  <label class="relative inline-block w-12 h-6 cursor-pointer">
+    <input type="checkbox" id="posterToggle" class="sr-only" checked>
+    <span class="block bg-gray-700 rounded-full w-full h-full transition"></span>
+    <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-orange-600 rounded-full transition transform" id="toggleThumb"></span>
+  </label>
+</div>
+
 <section class="container mx-auto px-4 py-12 flex-1">
-
   <div id="username" class="text-2xl md:text-3xl font-serif font-bold text-gradient-accent mb-10 text-center"></div>
-
   <div id="moviesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 md:gap-10 max-w-6xl mx-auto mb-14"></div>
-
   <div class="text-center">
     <div id="result" class="text-xl md:text-2xl font-bold min-h-[48px] mb-6"></div>
     <button id="playAgainBtn" class="bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 font-semibold rounded-lg transition">
       Play Again
     </button>
   </div>
-
 </section>
 
 <footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
@@ -92,14 +107,38 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
+let useCustomPosters = true;
 let users = [];
 let currentUser;
 let fakeMovie;
 let gameOver = false;
 let currentMovies = [];
 
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.getElementById("posterToggle");
+  
+  toggle.addEventListener("change", async () => {
+    useCustomPosters = toggle.checked;
+    const file = useCustomPosters ? "4fav.json" : "4fav_tmdb.json";
+    const res = await fetch(file);
+    const newUsers = await res.json();
+    const updatedUser = newUsers.find(u => u.username === currentUser.username);
+    if (updatedUser) {
+      currentMovies = currentMovies.map(movie => {
+        if (movie === fakeMovie) return movie;
+        const match = updatedUser.favorites.find(fav => fav.title === movie.title);
+        return match ? { ...movie, poster_url: match.poster_url } : movie;
+      });
+    }
+    displayMovies(currentMovies);
+  });
+
+  loadUsers();
+});
+
 async function loadUsers() {
-  const res = await fetch("4fav.json");
+  const file = useCustomPosters ? "4fav.json" : "4fav_tmdb.json";
+  const res = await fetch(file);
   users = await res.json();
   startGame();
 }
@@ -138,30 +177,13 @@ function displayMovies(movies) {
 
     card.innerHTML = `
       <div class="flex flex-col items-center h-full">
-
-        <!-- TITLE (auto height, max 2 lines) -->
-        <div class="movie-title
-                    text-sm sm:text-base md:text-lg
-                    font-semibold
-                    text-white
-                    text-center
-                    px-2
-                    mb-2
-                    line-clamp-2
-                    overflow-hidden
-                    min-h-[3rem]">
+        <div class="movie-title text-sm sm:text-base md:text-lg font-semibold text-white text-center px-2 mb-2 line-clamp-2 overflow-hidden min-h-[3rem]">
           ${movie.title}
         </div>
-
-        <!-- POSTER (fixed size so all align) -->
         <div class="card w-full flex-shrink-0">
-          <img src="${movie.poster_url}" 
-               class="rounded-lg shadow-lg w-full object-cover h-48 md:h-56 lg:h-64">
+          <img src="${movie.poster_url}" class="rounded-lg shadow-lg w-full object-cover h-48 md:h-56 lg:h-64">
         </div>
-
-        <!-- RESULT LABEL (hidden until click) -->
         <div class="movie-label text-lg font-bold mt-2 min-h-[24px] text-white"></div>
-
       </div>
     `;
 
@@ -174,7 +196,6 @@ function handleGuess(selectedIndex) {
   if (gameOver) return;
 
   gameOver = true;
-
   const selectedMovie = currentMovies[selectedIndex];
 
   if (selectedMovie === fakeMovie) {
@@ -186,25 +207,17 @@ function handleGuess(selectedIndex) {
     document.getElementById("result").className = "text-white text-xl md:text-2xl font-bold min-h-[48px] mb-6";
   }
 
-  // Reveal all labels in white and reverse the emojis
   const allCards = document.querySelectorAll(".card-wrapper");
   allCards.forEach((card, index) => {
     const labelDiv = card.querySelector(".movie-label");
     const movie = currentMovies[index];
 
-    if (movie === fakeMovie) {
-      labelDiv.textContent = "FAKE ❌";
-    } else {
-      labelDiv.textContent = "REAL ✅";
-    }
-
+    labelDiv.textContent = movie === fakeMovie ? "FAKE ❌" : "REAL ✅";
     labelDiv.className = "movie-label text-lg font-bold mb-2 text-white";
   });
 }
 
-document.getElementById("playAgainBtn").addEventListener("click", startGame);
-
-loadUsers();
+document.getElementById("playAgainBtn").addEventListener("click", loadUsers);
 </script>
 
 </body>
