@@ -137,12 +137,39 @@ function displayMovies(movies) {
     card.className = "card-wrapper text-center cursor-pointer";
     card.dataset.index = index;
 
-    card.innerHTML = `
-      <div class="card mb-2">
-        <img src="${movie.poster_url}" class="rounded-lg shadow-lg">
-      </div>
-      <div class="movie-label text-lg font-bold mb-2 min-h-[24px] text-white"></div>
-    `;
+      card.innerHTML = `
+        <div class="flex flex-col items-center h-full">
+
+          <!-- TITLE (always visible) -->
+            <div class="movie-title
+                        text-sm sm:text-base md:text-lg
+                        font-semibold
+                        text-white
+                        text-center
+                        leading-tight
+                        px-2
+                        h-[3.2rem]
+                        overflow-hidden
+                        flex items-center justify-center">
+              ${movie.title}
+            </div>
+
+          <!-- POSTER -->
+          <div class="card mt-2 w-full">
+            <img src="${movie.poster_url}" 
+                class="rounded-lg shadow-lg w-full object-cover">
+          </div>
+
+          <!-- RESULT LABEL (hidden until click) -->
+          <div class="movie-label 
+                      text-lg font-bold 
+                      mt-2 
+                      min-h-[24px] 
+                      text-white">
+          </div>
+
+        </div>
+      `;
 
     card.addEventListener("click", () => handleGuess(index));
     grid.appendChild(card);
