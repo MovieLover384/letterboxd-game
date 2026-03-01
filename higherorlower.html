@@ -98,10 +98,24 @@ let leftUser = null;
 let rightUser = null;
 let score = 0;
 
+
+let highScore = localStorage.getItem("filmsThisYearHighScore")
+    ? parseInt(localStorage.getItem("filmsThisYearHighScore"))
+    : 0;
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const scoreDiv = document.getElementById('score');
+    const highScoreDiv = document.createElement('div');
+    highScoreDiv.id = 'highscore';
+    highScoreDiv.className = 'text-lg font-semibold mb-6 text-orange-500';
+    highScoreDiv.innerText = `High Score: ${highScore}`;
+    scoreDiv.insertAdjacentElement('afterend', highScoreDiv);
+});
+
 async function loadData() {
     members = await fetch('members.json').then(res => res.json());
     favorites = await fetch('4fav.json').then(res => res.json());
-
 
     const favoriteUsernames = favorites.map(f => f.username);
     members = members.filter(member => member.stats && typeof member.stats.this_year === 'number' && favoriteUsernames.includes(member.username));
@@ -119,10 +133,13 @@ function startNewRound() {
     document.getElementById('result').innerText = "";
     document.getElementById('higherBtn').disabled = false;
     document.getElementById('lowerBtn').disabled = false;
+
     if (!leftUser) leftUser = members[Math.floor(Math.random() * members.length)];
+    
     do {
         rightUser = members[Math.floor(Math.random() * members.length)];
     } while (rightUser.username === leftUser.username);
+
     displayUsers();
 }
 
@@ -148,9 +165,7 @@ function displayUsers() {
         <h3 class="text-xl font-bold">${leftUser.username}</h3>
         <p>Total films: ${leftUser.stats.films}</p>
         <p>Films this year: ${leftUser.stats.this_year}</p>
-        <div class="favorite-movies">
-            ${buildFavs(leftFavs)}
-        </div>
+        <div class="favorite-movies">${buildFavs(leftFavs)}</div>
     `;
 
     rightDiv.innerHTML = `
@@ -158,9 +173,7 @@ function displayUsers() {
         <h3 class="text-xl font-bold">${rightUser.username}</h3>
         <p>Total films: ${rightUser.stats.films}</p>
         <p>Films this year: ???</p>
-        <div class="favorite-movies">
-            ${buildFavs(rightFavs)}
-        </div>
+        <div class="favorite-movies">${buildFavs(rightFavs)}</div>
     `;
 
     leftDiv.classList.remove('slide');
@@ -182,12 +195,14 @@ function slideRightToLeft() {
         leftDiv.style.opacity = '';
         rightDiv.style.transition = '';
         rightDiv.style.transform = '';
+
         let newRightUser;
         do {
             newRightUser = members[Math.floor(Math.random() * members.length)];
         } while (newRightUser.username === leftUser.username);
         rightUser = newRightUser;
         displayUsers();
+
         document.getElementById('higherBtn').disabled = false;
         document.getElementById('lowerBtn').disabled = false;
     }, 700);
@@ -196,19 +211,32 @@ function slideRightToLeft() {
 function makeGuess(higher) {
     document.getElementById('higherBtn').disabled = true;
     document.getElementById('lowerBtn').disabled = true;
-    const resultDiv = document.getElementById('result');
-    const actualHigher = rightUser.stats.this_year >= leftUser.stats.this_year;
 
-    if ((higher && actualHigher) || (!higher && !actualHigher)) {
+    const resultDiv = document.getElementById('result');
+    const leftValue = leftUser.stats.this_year;
+    const rightValue = rightUser.stats.this_year;
+
+    
+    const sameValue = leftValue === rightValue;
+    const actualHigher = rightValue > leftValue;
+
+    if (sameValue || (higher && actualHigher) || (!higher && !actualHigher)) {
         score++;
         document.getElementById('score').innerText = `Score: ${score}`;
-        resultDiv.innerText = `Correct! ${rightUser.username} watched ${rightUser.stats.this_year} this year.`;
+        resultDiv.innerText = `Correct! ${rightUser.username} watched ${rightValue} this year.`;
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         slideRightToLeft();
     } else {
-        const finalScore = score;
-        resultDiv.innerText = `Wrong! ${rightUser.username} watched ${rightUser.stats.this_year} this year.\nFinal Score: ${finalScore}`;
+        resultDiv.innerText = `Wrong! ${rightUser.username} watched ${rightValue} this year.\nFinal Score: ${score}`;
         document.getElementById('nextBtnContainer').classList.remove('hidden');
+
+        
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("filmsThisYearHighScore", highScore);
+            document.getElementById('highscore').innerText = `High Score: ${highScore}`;
+        }
+
         score = 0;
         document.getElementById('score').innerText = `Score: ${score}`;
     }

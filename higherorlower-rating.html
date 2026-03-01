@@ -105,11 +105,24 @@ let leftFilm = null;
 let rightFilm = null;
 let score = 0;
 
+
+let highScore = localStorage.getItem("ratingGameHighScore")
+    ? parseInt(localStorage.getItem("ratingGameHighScore"))
+    : 0;
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("highscore")?.remove(); 
+    const scoreDiv = document.createElement("div");
+    scoreDiv.id = "highscore";
+    scoreDiv.className = "text-lg font-semibold mb-6 text-orange-500";
+    scoreDiv.innerText = `High Score: ${highScore}`;
+    document.getElementById('score').insertAdjacentElement('afterend', scoreDiv);
+});
+
 async function loadData() {
     const data = await fetch('film_ratings.json').then(res => res.json());
-    // Only keep films with numeric rating_value
     films = data.data.filter(f => typeof f.rating_value === "number");
-    remainingFilms = [...films]; // copy for tracking per round
+    remainingFilms = [...films];
     startRound();
 }
 
@@ -118,7 +131,6 @@ function startRound() {
     document.getElementById('nextBtnContainer').classList.add('hidden');
     document.getElementById('higherBtn').disabled = false;
     document.getElementById('lowerBtn').disabled = false;
-
 
     if (!leftFilm) {
         if (remainingFilms.length === 0) remainingFilms = [...films];
@@ -196,35 +208,47 @@ function makeGuess(higher) {
     document.getElementById('higherBtn').disabled = true;
     document.getElementById('lowerBtn').disabled = true;
 
-    const actualHigher = rightFilm.rating_value >= leftFilm.rating_value;
+    const leftValue = leftFilm.rating_value;
+    const rightValue = rightFilm.rating_value;
     const resultDiv = document.getElementById('result');
 
+    
     document.getElementById('rightFilm').querySelector('p').innerHTML =
-        `⭐ ${rightFilm.rating_value}`;
+        `⭐ ${rightValue}`;
 
-    if ((higher && actualHigher) || (!higher && !actualHigher)) {
+    
+    const sameRating = leftValue === rightValue;
+    const actualHigher = rightValue > leftValue;
+
+    if (sameRating || (higher && actualHigher) || (!higher && !actualHigher)) {
         score++;
         document.getElementById('score').innerText = `Score: ${score}`;
-        resultDiv.innerText = `Correct!`;
+        resultDiv.innerText = "Correct!";
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         setTimeout(slideRightToLeft, 900);
     } else {
         resultDiv.innerText =
-            `Wrong! ⭐ ${rightFilm.rating_value}\nFinal Score: ${score}`;
+            `Wrong! ⭐ ${rightValue}\nFinal Score: ${score}`;
         document.getElementById('nextBtnContainer').classList.remove('hidden');
+
+        // Update highscore if needed
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("ratingGameHighScore", highScore);
+            document.getElementById("highscore").innerText = `High Score: ${highScore}`;
+        }
+
         score = 0;
         document.getElementById('score').innerText = `Score: 0`;
         leftFilm = null;
         rightFilm = null;
-        remainingFilms = [...films]; // reset for new round
+        remainingFilms = [...films];
     }
 }
 
 document.getElementById('higherBtn').addEventListener('click', () => makeGuess(true));
 document.getElementById('lowerBtn').addEventListener('click', () => makeGuess(false));
-document.getElementById('nextBtn').addEventListener('click', () => {
-    startRound();
-});
+document.getElementById('nextBtn').addEventListener('click', () => startRound());
 
 loadData();
 </script>

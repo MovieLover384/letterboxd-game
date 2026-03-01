@@ -94,6 +94,21 @@ let leftPlayer = null;
 let rightPlayer = null;
 let score = 0;
 
+
+let highScore = localStorage.getItem("moreMoviesHighScore")
+    ? parseInt(localStorage.getItem("moreMoviesHighScore"))
+    : 0;
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const scoreDiv = document.getElementById('score');
+    const highScoreDiv = document.createElement('div');
+    highScoreDiv.id = 'highscore';
+    highScoreDiv.className = 'text-lg font-semibold mb-4 text-orange-500';
+    highScoreDiv.innerText = `High Score: ${highScore}`;
+    scoreDiv.insertAdjacentElement('afterend', highScoreDiv);
+});
+
 function updateButtonLabels() {
     const isMobile = window.innerWidth <= 768;
     const btnLeft = document.getElementById('chooseLeft');
@@ -107,7 +122,6 @@ function updateButtonLabels() {
         btnRight.innerText = 'Right';
     }
 }
-
 
 window.addEventListener('load', updateButtonLabels);
 window.addEventListener('resize', updateButtonLabels);
@@ -205,6 +219,17 @@ function guess(playerSide) {
     } else {
         resultDiv.innerHTML = `Wrong! ${leftPlayer.username}: ${leftFilms} | ${rightPlayer.username}: ${rightFilms}`;
         resultDiv.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+
+        
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("moreMoviesHighScore", highScore);
+            document.getElementById('highscore').innerText = `High Score: ${highScore}`;
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+        }
+
+        score = 0;
+        document.getElementById('score').innerText = `Score: ${score}`;
     }
 }
 
