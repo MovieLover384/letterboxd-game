@@ -46,6 +46,7 @@
       placeholder="Search for a movie..." 
       class="w-full p-3 rounded-lg border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
       style="background-color: var(--film-surface);"
+      autocomplete="off"
     >
     <div 
       id="suggestions" 
@@ -54,13 +55,12 @@
     ></div>
   </div>
 
-    <div class="text-center mb-6 flex flex-col sm:flex-row justify-center gap-4">
-        <button id="guessBtn" class="bg-green-500 hover:bg-green-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Submit Guess</button>
-        <button id="giveUpBtn" class="bg-red-500 hover:bg-red-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Give Up</button>
-    </div>
+  <div class="text-center mb-6 flex flex-col sm:flex-row justify-center gap-4">
+    <button id="guessBtn" class="bg-green-500 hover:bg-green-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Submit Guess</button>
+    <button id="giveUpBtn" class="bg-red-500 hover:bg-red-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Give Up</button>
+  </div>
 
   <div id="result" class="text-center text-lg font-semibold mb-6"></div>
-
   <div id="correctMovie" class="hidden flex flex-col items-center gap-4 mb-6"></div>
 
   <div class="text-center">
@@ -109,138 +109,165 @@ let previousMovie = null;
 let usedReviews = [];
 let wrongGuesses = 0;
 const maxWrong = 3;
+let selectedSuggestion = null;
+
+function normalize(str) {
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+}
+
+function titleTooVisible(review, title) {
+  const r = normalize(review);
+  const t = normalize(title);
+
+  if (r.includes(t)) return true;
+
+  const tNoSpace = t.replace(/\s+/g, "");
+  const rNoSpace = r.replace(/\s+/g, "");
+  if (rNoSpace.includes(tNoSpace)) return true;
+
+  const titleWords = t.split(" ").filter(w => w.length > 3);
+  for (let word of titleWords) {
+    if (r.includes(word)) return true;
+  }
+
+  return false;
+}
 
 async function loadMovies() {
-    const res = await fetch("reviewguess.json");
-    const data = await res.json();
-    movies = data.data; 
-    startNewGame();
+  const res = await fetch("reviewguess.json");
+  const data = await res.json();
+  movies = data.data;
+  startNewGame();
 }
 
 function pickReview(movie) {
-    const available = movie.reviews.filter(r => !usedReviews.includes(r.review) && !r.review.toLowerCase().includes(movie.film_name.toLowerCase()));
-    if (available.length === 0) return null;
-    const reviewObj = available[Math.floor(Math.random() * available.length)];
-    usedReviews.push(reviewObj.review);
-    return reviewObj;
+  const available = movie.reviews.filter(r => 
+    !usedReviews.includes(r.review) &&
+    !titleTooVisible(r.review, movie.film_name)
+  );
+  if (available.length === 0) return null;
+  const reviewObj = available[Math.floor(Math.random() * available.length)];
+  usedReviews.push(reviewObj.review);
+  return reviewObj;
 }
 
 function startNewGame() {
-    let newMovie;
-    do {
-        newMovie = movies[Math.floor(Math.random() * movies.length)];
-    } while(previousMovie && newMovie.film_name === previousMovie.film_name && movies.length > 1);
+  let newMovie;
+  do {
+    newMovie = movies[Math.floor(Math.random() * movies.length)];
+  } while(previousMovie && newMovie.film_name === previousMovie.film_name && movies.length > 1);
 
-    previousMovie = newMovie;
-    currentMovie = newMovie;
-    usedReviews = [];
-    wrongGuesses = 0;
+  previousMovie = newMovie;
+  currentMovie = newMovie;
+  usedReviews = [];
+  wrongGuesses = 0;
+  selectedSuggestion = null;
 
-    document.getElementById("reviewsContainer").innerHTML = "";
-    document.getElementById("movieSearch").value = "";
-    document.getElementById("suggestions").innerHTML = "";
-    document.getElementById("result").innerHTML = "";
-    
-    const correctDiv = document.getElementById("correctMovie");
-    correctDiv.classList.add("hidden");
-    correctDiv.innerHTML = "";
+  document.getElementById("reviewsContainer").innerHTML = "";
+  document.getElementById("movieSearch").value = "";
+  document.getElementById("suggestions").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("correctMovie").classList.add("hidden");
+  document.getElementById("correctMovie").innerHTML = "";
 
-    showNextReview();
+  showNextReview();
 }
 
 function showNextReview() {
-    const reviewObj = pickReview(currentMovie);
-    if (!reviewObj) return revealCorrectMovie();
+  const reviewObj = pickReview(currentMovie);
+  if (!reviewObj) return revealCorrectMovie(false);
 
-    const container = document.createElement("div");
-    container.className = "bg-gray-800/70 p-4 rounded-lg border border-gray-700 shadow-sm text-left flex flex-col gap-2";
+  const container = document.createElement("div");
+  container.className = "bg-gray-800/70 p-4 rounded-lg border border-gray-700 shadow-sm text-left flex flex-col gap-2";
 
-    const reviewText = document.createElement("p");
-    reviewText.className = "text-white text-base md:text-lg";
-    reviewText.textContent = `"${reviewObj.review}"`;
-    container.appendChild(reviewText);
+  const reviewText = document.createElement("p");
+  reviewText.className = "text-white text-base md:text-lg";
+  reviewText.textContent = `"${reviewObj.review}"`;
 
-    const authorText = document.createElement("p");
-    authorText.className = "text-gray-400 text-sm md:text-base italic";
-    authorText.textContent = `- ${reviewObj.author} (${reviewObj.rating})`;
-    container.appendChild(authorText);
+  const authorText = document.createElement("p");
+  authorText.className = "text-gray-400 text-sm md:text-base italic";
+  authorText.textContent = `- ${reviewObj.author} (${reviewObj.rating})`;
 
-    document.getElementById("reviewsContainer").appendChild(container);
-    container.scrollIntoView({ behavior: "smooth", block: "end" });
+  container.appendChild(reviewText);
+  container.appendChild(authorText);
+  document.getElementById("reviewsContainer").appendChild(container);
 }
 
 const searchInput = document.getElementById("movieSearch");
 const suggestionsBox = document.getElementById("suggestions");
 
 searchInput.addEventListener("input", () => {
-    const query = searchInput.value.trim();
-    suggestionsBox.innerHTML = "";
-    if (query.length < 2) return;
-    const filtered = movies.filter(m => m.film_name.toLowerCase().includes(query.toLowerCase())).slice(0,5);
-    filtered.forEach(movie => {
-        const div = document.createElement("div");
-        div.className = "p-3 cursor-pointer hover:bg-green-600 hover:text-black rounded";
-        div.textContent = movie.film_name;
-        div.onclick = () => {
-            searchInput.value = movie.film_name;
-            suggestionsBox.innerHTML = "";
-        };
-        suggestionsBox.appendChild(div);
-    });
+  const query = searchInput.value.trim();
+  suggestionsBox.innerHTML = "";
+  selectedSuggestion = null;
+  if (query.length < 2) return;
+
+  const filtered = movies
+    .filter(m => m.film_name.toLowerCase().includes(query.toLowerCase()))
+    .slice(0,5);
+
+  filtered.forEach(movie => {
+    const div = document.createElement("div");
+    div.className = "p-3 cursor-pointer hover:bg-green-600 hover:text-black rounded";
+    div.textContent = movie.film_name;
+    div.onclick = () => {
+      searchInput.value = movie.film_name;
+      selectedSuggestion = movie.film_name;
+      suggestionsBox.innerHTML = "";
+    };
+    suggestionsBox.appendChild(div);
+  });
 });
 
 function revealCorrectMovie(showConfetti = true) {
-    const correctDiv = document.getElementById("correctMovie");
-    correctDiv.innerHTML = `
-        <h3 class="text-2xl font-bold text-gradient-accent">Correct Movie:</h3>
-        <div class="card p-3 w-64">
-            <img src="${currentMovie.film_poster}" alt="${currentMovie.film_name}" class="w-full rounded-lg mb-2">
-            <p class="font-semibold text-white text-center">${currentMovie.film_name}</p>
-        </div>
-    `;
-    correctDiv.classList.remove("hidden");
-    if (showConfetti) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-    }
+  const correctDiv = document.getElementById("correctMovie");
+  correctDiv.innerHTML = `
+    <h3 class="text-2xl font-bold text-gradient-accent">Correct Movie:</h3>
+    <div class="card p-3 w-64">
+      <img src="${currentMovie.film_poster}" alt="${currentMovie.film_name}" class="w-full rounded-lg mb-2">
+      <p class="font-semibold text-white text-center">${currentMovie.film_name}</p>
+    </div>
+  `;
+  correctDiv.classList.remove("hidden");
+  if (showConfetti) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 }
 
 document.getElementById("guessBtn").addEventListener("click", () => {
-    const guess = searchInput.value.trim().toLowerCase();
-    const correct = currentMovie.film_name.toLowerCase();
-    const result = document.getElementById("result");
-    if (!guess) {
-        result.innerHTML = "You need to enter a movie before submitting";
-        result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-        return;
-    }
-    if (guess === correct || correct.includes(guess)) {
-        result.innerHTML = "Correct!";
-        result.className = "text-green-400 text-lg font-semibold mb-4 text-center";
-        revealCorrectMovie();
+  const guess = normalize(searchInput.value);
+  const correct = normalize(currentMovie.film_name);
+  const result = document.getElementById("result");
+
+  if (!selectedSuggestion) {
+    result.innerHTML = "Please select a movie from the suggestions.";
+    result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+    return;
+  }
+
+  if (guess === correct) {
+    result.innerHTML = "Correct!";
+    result.className = "text-green-400 text-lg font-semibold mb-4 text-center";
+    revealCorrectMovie();
+  } else {
+    wrongGuesses++;
+    if (wrongGuesses >= maxWrong) {
+      result.innerHTML = `Wrong! You've reached ${maxWrong} wrong guesses.`;
+      result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+      revealCorrectMovie(false);
     } else {
-        wrongGuesses++;
-        if (wrongGuesses >= maxWrong) {
-            result.innerHTML = `Wrong! You've reached ${maxWrong} wrong guesses.`;
-            result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-            revealCorrectMovie(false);
-        } else {
-            result.innerHTML = `Wrong! Try again (${wrongGuesses}/${maxWrong})`;
-            result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-            showNextReview();
-        }
+      result.innerHTML = `Wrong! Try again (${wrongGuesses}/${maxWrong})`;
+      result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
+      showNextReview();
     }
+  }
 });
 
 document.getElementById("giveUpBtn").addEventListener("click", () => {
-    const result = document.getElementById("result");
-    result.innerHTML = "You gave up!";
-    result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-    revealCorrectMovie(false);
+  document.getElementById("result").innerHTML = "You gave up!";
+  document.getElementById("result").className = "text-red-500 text-lg font-semibold mb-4 text-center";
+  revealCorrectMovie(false);
 });
 
-document.getElementById("playAgainBtn").addEventListener("click", () => {
-    startNewGame();
-});
+document.getElementById("playAgainBtn").addEventListener("click", startNewGame);
 
 loadMovies();
 </script>
