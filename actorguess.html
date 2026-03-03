@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess the Actor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="4fav.css">
+</head>
+
+<body class="flex flex-col min-h-screen">
+
+<!-- SAME HEADER -->
+<header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-white">
+          <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/>
+        </svg>
+      </div>
+      <span class="text-xl font-serif font-bold">
+        Movie<span class="text-gradient-accent">Knowledge</span>
+      </span>
+    </a>
+    <nav class="flex items-center gap-6">
+      <a href="/letterboxd-game/" class="hover:text-white transition">Home</a>
+      <a href="/letterboxd-game/info" class="hover:text-white transition">Info</a>
+    </nav>
+  </div>
+</header>
+
+<section class="relative text-center py-20 md:py-28 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
+  <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
+      Guess the <span class="text-gradient-accent">Actor</span>
+    </h1>
+    <p class="text-base sm:text-lg md:text-xl text-gray-400">
+      Can you name the actor? We'll give you 3–5 of their biggest hits!
+    </p>
+  </div>
+</section>
+
+<div class="flex flex-col items-center gap-3 mt-8 mb-6">
+  <div id="score" class="text-lg font-semibold text-white">
+    Score: 0
+  </div>
+
+  <div id="highscore" class="text-lg font-semibold text-orange-500">
+    High Score: 0
+  </div>
+</div>
+
+
+<section class="container mx-auto px-4 py-10 flex-1">
+
+  <div id="moviesContainer"
+  class="grid gap-4 mb-10 mx-auto justify-center"
+  style="grid-template-columns: repeat(auto-fit, minmax(160px, 160px));">
+  </div>
+
+
+  <div class="max-w-md mx-auto mb-6 relative">
+    <input 
+      type="text" 
+      id="actorSearch" 
+      placeholder="Search for an actor..." 
+      class="w-full p-3 rounded-lg border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+      style="background-color: var(--film-surface);"
+      autocomplete="off"
+    >
+    <div 
+      id="suggestions" 
+      class="absolute top-full left-0 right-0 rounded-b-lg mt-1 max-h-60 overflow-y-auto z-20 border border-gray-700"
+      style="background-color: var(--film-surface);"
+    ></div>
+  </div>
+
+
+  <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6">
+
+    <button id="guessBtn"
+      class="bg-green-500 hover:bg-green-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">
+      Submit Guess
+    </button>
+
+    <button id="moreMoviesBtn"
+      class="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">
+      Get 2 More Movies
+    </button>
+
+    <button id="giveUpBtn"
+      class="bg-red-500 hover:bg-red-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">
+      Give Up
+    </button>
+
+  </div>
+
+  <div id="result" class="text-center text-lg font-semibold mb-6"></div>
+  <div id="correctActor" class="hidden flex flex-col items-center gap-4 mb-6"></div>
+
+  <div class="text-center">
+    <button id="playAgainBtn"
+      class="bg-orange-500 hover:bg-orange-600 text-black px-5 py-2 font-semibold rounded-lg transition">
+      Play Again
+    </button>
+  </div>
+</section>
+
+<footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
+  <h3 class="text-orange-500 mb-2">
+    MovieKnowledge ~ Fan project, Not affiliated with Letterboxd
+  </h3>
+  <p class="text-gray-400 mb-1 flex items-center justify-center gap-2">
+    Made with
+    <svg width="18" height="18" viewBox="0 0 24 24" class="inline-block">
+      <defs>
+        <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="hsl(25,95%,55%)"/>
+          <stop offset="100%" stop-color="hsl(35,90%,60%)"/>
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+           2 6 4 4 6.5 4 
+           8.24 4 9.91 5.01 10.44 6.36 
+           10.97 5.01 12.64 4 14.38 4 
+           16.88 4 18.88 6 18.88 8.5 
+           18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z"
+        fill="url(#heartGradient)"
+      />
+    </svg>
+    for film lovers
+  </p>
+  <p class="text-gray-400">
+    Follow me on 
+    <a href="https://letterboxd.com/MovieLover384/" target="_blank" class="text-orange-500 hover:text-orange-400 underline">
+      Letterboxd
+    </a>
+  </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+let actors = [];
+let currentActor = null;
+let shownMovies = [];
+let selectedSuggestion = null;
+
+let remainingActors = [];
+let score = 0;
+
+let highScore = localStorage.getItem("actorGameHighScore")
+  ? parseInt(localStorage.getItem("actorGameHighScore"))
+  : 0;
+
+function normalize(str) {
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+}
+
+async function loadActors() {
+  const res = await fetch("actorguess.json");
+  actors = await res.json();
+  remainingActors = [...actors];
+  document.getElementById("highscore").innerText = `High Score: ${highScore}`;
+  startNewGame();
+}
+
+function shuffle(arr) {
+  return arr.sort(() => 0.5 - Math.random());
+}
+
+function addMovies(count) {
+  const remaining = currentActor.top_movies
+    .filter(m => !shownMovies.includes(m.title));
+
+  const newMovies = shuffle(remaining).slice(0, count);
+
+  newMovies.forEach(movie => {
+    shownMovies.push(movie.title);
+
+    const div = document.createElement("div");
+    div.className = "bg-gray-800/70 p-3 rounded-lg border border-gray-700 text-center transform transition hover:scale-105";
+
+      div.innerHTML = `
+        <img src="${movie.poster_url.replace('/original/', '/w780/')}"
+            class="w-full aspect-[2/3] object-cover rounded-lg mb-2">
+        <h3 class="text-white text-sm sm:text-base font-semibold">${movie.title}</h3>
+        <p class="text-gray-400 text-xs">${movie.year}</p>
+      `;
+
+    document.getElementById("moviesContainer").appendChild(div);
+  });
+}
+
+function getRandomActor() {
+  if (remainingActors.length <= actors.length * 0.2) {
+    remainingActors = [...actors];
+  }
+
+  const index = Math.floor(Math.random() * remainingActors.length);
+  return remainingActors.splice(index, 1)[0];
+}
+
+function startNewGame() {
+  currentActor = getRandomActor();
+  shownMovies = [];
+  selectedSuggestion = null;
+
+  document.getElementById("moviesContainer").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("correctActor").classList.add("hidden");
+  document.getElementById("correctActor").innerHTML = "";
+  document.getElementById("actorSearch").value = "";
+  document.getElementById("suggestions").innerHTML = "";
+
+  addMovies(3);
+}
+
+document.getElementById("moreMoviesBtn").addEventListener("click", () => {
+  addMovies(2);
+});
+
+function revealActor(showConfetti = true) {
+  const div = document.getElementById("correctActor");
+  div.innerHTML = `
+    <h3 class="text-2xl font-bold text-gradient-accent">Correct Actor:</h3>
+    <div class="card p-4 w-64 text-center">
+      <img src="${currentActor.actor_image_url}" class="rounded-lg mb-3 mx-auto">
+      <p class="text-white font-semibold">${currentActor.name}</p>
+    </div>
+  `;
+  div.classList.remove("hidden");
+
+  if (showConfetti) {
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+  }
+}
+
+document.getElementById("guessBtn").addEventListener("click", () => {
+
+  if (!selectedSuggestion) {
+    document.getElementById("result").innerHTML = "Please select an actor from suggestions.";
+    document.getElementById("result").className =
+      "text-center text-lg font-semibold mb-6 text-red-500";
+    return;
+  }
+
+  if (normalize(selectedSuggestion) === normalize(currentActor.name)) {
+
+    score = score + 1;
+    document.getElementById("score").innerText = `Score: ${score}`;
+
+    document.getElementById("result").innerHTML = "Correct!";
+    document.getElementById("result").className =
+      "text-center text-lg font-semibold mb-6 text-green-400";
+
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("actorGameHighScore", highScore);
+      document.getElementById("highscore").innerText = `High Score: ${highScore}`;
+    }
+
+    revealActor(true);
+
+  } else {
+
+    document.getElementById("result").innerHTML =
+      `Wrong! Final Score: ${score}`;
+
+    document.getElementById("result").className =
+      "text-center text-lg font-semibold mb-6 text-red-500";
+
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("actorGameHighScore", highScore);
+      document.getElementById("highscore").innerText = `High Score: ${highScore}`;
+    }
+
+    score = 0;
+    document.getElementById("score").innerText = "Score: 0";
+
+    revealActor(false);
+  }
+});
+
+document.getElementById("giveUpBtn").addEventListener("click", () => {
+
+  document.getElementById("result").innerHTML = "You gave up!";
+  document.getElementById("result").className =
+    "text-center text-lg font-semibold mb-6 text-red-500";
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("actorGameHighScore", highScore);
+    document.getElementById("highscore").innerText = `High Score: ${highScore}`;
+  }
+
+  score = 0;
+  document.getElementById("score").innerText = "Score: 0";
+
+  revealActor(false);
+});
+
+document.getElementById("playAgainBtn").addEventListener("click", startNewGame);
+
+
+const searchInput = document.getElementById("actorSearch");
+const suggestionsBox = document.getElementById("suggestions");
+
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.trim();
+  suggestionsBox.innerHTML = "";
+  selectedSuggestion = null;
+  if (query.length < 2) return;
+
+  const filtered = actors
+    .filter(a => a.name.toLowerCase().includes(query.toLowerCase()))
+    .slice(0,5);
+
+  filtered.forEach(actor => {
+    const div = document.createElement("div");
+    div.className = "p-3 cursor-pointer hover:bg-green-600 hover:text-black rounded";
+    div.textContent = actor.name;
+    div.onclick = () => {
+      searchInput.value = actor.name;
+      selectedSuggestion = actor.name;
+      suggestionsBox.innerHTML = "";
+    };
+    suggestionsBox.appendChild(div);
+  });
+});
+
+loadActors();
+</script>
+
+</body>
+</html>
