@@ -84,3 +84,52 @@ h1,h2,h3,h4 { font-family: 'Libre Baskerville', serif; }
   margin: 0.25rem 0;
   font-size: 0.95rem;
 }
+
+.marquee-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 12s linear infinite;
+}
+
+.marquee-content {
+  display: inline-block;
+  padding-right: 4rem; 
+  white-space: nowrap;
+}
+
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+
+@media (max-width: 640px) {
+  .marquee-content {
+    padding-right: 2rem;
+    font-size: 0.875rem;
+  }
+  .marquee-track {
+    animation-duration: 20s;
+  }
+}
+
+.bannerspace {
+  margin-left: 200px;
+}
+
+@media (max-width: 640px) {
+  .text-5xl {
+    font-size: 2.4rem;
+  }
+}
