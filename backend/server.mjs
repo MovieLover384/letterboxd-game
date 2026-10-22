@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createWatchlistService, WatchlistError } from './watchlist.mjs';
 import { createBrowserFetcher } from './browser-fetch.mjs';
 import { createVerifier } from './answer-verifier.mjs';
+import { runChecks } from './diagnostics.mjs';
 import { dailyQuestions, utcDay } from '../daily-core.mjs';
 
 const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -42,6 +43,11 @@ const verifier = await createVerifier({ catalog, dataFile: learnedFile,
   tmdbKey: process.env.TMDB_API_KEY,
   deepseekKey: process.env.DEEPSEEK_API_KEY,
   moviePosters: postersById });
+let lastVerifyError = null;
+const checks = runChecks({ tmdbKey: process.env.TMDB_API_KEY, deepseekKey: process.env.DEEPSEEK_API_KEY,
+  browserFetch: browser.fetchPage,
+  letterboxdProbes: ['/schaffrillas/films/rated/5/by/date/', '/schaffrillas/films/rated/5/',
+    '/schaffrillas/rss/', '/schaffrillas/films/ratings/'] });
 const pinnedFile = path.join(dataDir, 'daily-pinned.json');
 let pinned = {};
 try { pinned = JSON.parse(await fs.readFile(pinnedFile, 'utf8')); }
@@ -100,7 +106,7 @@ async function readJson(request) {
 const server = http.createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   if (pathname === '/health') {
-    json(request, response, 200, { status: 'ok', ratedBrowserResult });
+    json(request, response, 200, { status: 'ok', ratedBrowserResult, checks, lastVerifyError });
     return;
   }
   if (request.method === 'OPTIONS' && pathname.startsWith('/letterboxd-game/api/')) {
@@ -148,7 +154,9 @@ const server = http.createServer(async (request, response) => {
       json(request, response, 200, { path: poster });
     } else if (pathname === '/letterboxd-game/api/verify' && request.method === 'POST') {
       const { questionId, answer } = await readJson(request);
-      const result = await verifier.verify(questionId, answer);
+      let result;
+      try { result = await verifier.verify(questionId, answer); }
+      catch (error) { lastVerifyError = String(error.message).replace(/api_key=[^&\s]+/g, 'api_key=***'); throw error; }
       json(request, response, result.status === 'invalid' ? 400 : 200, result);
     } else {
       json(request, response, 404, { error: 'Endpoint not found.' });
