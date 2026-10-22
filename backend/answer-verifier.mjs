@@ -244,7 +244,23 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     .replace(/(\.\s+)([a-z])/g, (_, stop, letter) => stop + letter.toUpperCase())
     .replace(/^./, (letter) => letter.toUpperCase()).slice(0, 300);
 
+  // Timeouts, busy moments, cut-off replies and malformed JSON are one-off hiccups, so the check is
+  // retried before the player is told anything. A missing or rejected key is not worth retrying.
   async function askDeepSeek(question, movie, details) {
+    let failure;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      try { return await askDeepSeekOnce(question, movie, details); }
+      catch (error) {
+        failure = error;
+        console.warn(`DeepSeek attempt ${attempt + 1} failed:`, error.message);
+        if (/not configured|returned (?:400|401|402|403)\b/.test(error.message)) break;
+      }
+    }
+    throw failure;
+  }
+
+  async function askDeepSeekOnce(question, movie, details) {
     if (!deepseekKey) throw new Error('DEEPSEEK_API_KEY is not configured');
     const plot = await plotFor(movie);
     const response = await fetchImpl('https://api.deepseek.com/chat/completions', {
@@ -260,7 +276,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
               keywords: details.keywords?.keywords?.map(({ name }) => name).slice(0, 35) || [] } }) },
         ],
       }),
-      signal: AbortSignal.timeout(18000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) throw new Error(`DeepSeek returned ${response.status}`);
     const data = await response.json();

@@ -241,19 +241,42 @@ function showCorrection(question, original, item) {
   $('movie-answer').focus();
 }
 
-async function verifyOnline(questionId, answer) {
-  try {
-    const response = await fetch(apiUrl('api/verify'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId, answer }),
-      signal: AbortSignal.timeout(25000),
-    });
-    if (!response.ok) throw new Error(`Verifier returned ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.warn('Live answer check unavailable:', error);
-    return { status: 'unavailable' };
+// Set while an answer is being checked, so emptying the answer box can stop the check.
+let checkController = null;
+
+// A dropped connection, a server that is still waking up, or a busy moment at the movie database
+// usually clears within a second or two, so a failed check is tried again before giving up. The
+// player can cancel at any time, which returns a "cancelled" result.
+async function verifyOnline(questionId, answer, cancel, onRetry) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (cancel.aborted) return { status: 'cancelled' };
+    if (attempt) {
+      onRetry();
+      await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+      if (cancel.aborted) return { status: 'cancelled' };
+    }
+    const attemptController = new AbortController();
+    const stop = () => attemptController.abort();
+    cancel.addEventListener('abort', stop, { once: true });
+    const timer = setTimeout(stop, 30000);
+    try {
+      const response = await fetch(apiUrl('api/verify'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, answer }),
+        signal: attemptController.signal,
+      });
+      // A 400 carries a normal "invalid" result; busy or failing servers are worth another try.
+      if (response.ok || response.status === 400) return await response.json();
+      throw new Error(`Verifier returned ${response.status}`);
+    } catch (error) {
+      if (cancel.aborted) return { status: 'cancelled' };
+      console.warn(`Live answer check failed (attempt ${attempt + 1}):`, error);
+    } finally {
+      clearTimeout(timer);
+      cancel.removeEventListener('abort', stop);
+    }
   }
+  return { status: 'unavailable' };
 }
 
 function updateTimer() {
@@ -530,6 +553,8 @@ $('next-button').addEventListener('click', () => {
   render();
 });
 $('movie-answer').addEventListener('input', () => {
+  // Clearing the box while an answer is being checked changes the player's mind: stop the check.
+  if (checkController && !$('movie-answer').value.trim()) checkController.abort();
   $('answer-feedback').textContent = '';
   clearCorrection();
 });
@@ -579,9 +604,14 @@ $('answer-form').addEventListener('submit', async (event) => {
     $('answer-feedback').textContent = 'Still checking. The movie service may be waking up…';
   }, 5000);
   let checked;
+  checkController = new AbortController();
   try {
-    checked = await verifyOnline(question.id, typed);
+    checked = await verifyOnline(question.id, typed, checkController.signal, () => {
+      clearTimeout(slowNotice);
+      $('answer-feedback').textContent = 'Trying again…';
+    });
   } finally {
+    checkController = null;
     clearTimeout(slowNotice);
     if (deadline) deadline += Date.now() - startedChecking;
     saveProgress();
@@ -590,6 +620,14 @@ $('answer-form').addEventListener('submit', async (event) => {
     $('answer-form').querySelector('[type="submit"]').disabled = false;
     $('skip-button').disabled = false;
     updateTimer();
+  }
+  if (checked.status === 'cancelled') {
+    $('answer-feedback').textContent = '';
+    return;
+  }
+  if (checked.status === 'invalid') {
+    $('answer-feedback').textContent = 'Type a shorter answer and try again.';
+    return;
   }
   if (checked.status === 'accepted' && checked.item) {
     addLearnedAnswer(question.id, checked.item);

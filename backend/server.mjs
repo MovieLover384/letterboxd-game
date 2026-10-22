@@ -38,7 +38,7 @@ const verifier = await createVerifier({ catalog, dataFile: learnedFile,
   tmdbKey: process.env.TMDB_API_KEY,
   deepseekKey: process.env.DEEPSEEK_API_KEY,
   moviePosters: postersById });
-let lastVerifyError = null;
+const recentFailures = [];
 const checks = runChecks({ tmdbKey: process.env.TMDB_API_KEY, deepseekKey: process.env.DEEPSEEK_API_KEY });
 const pinnedFile = path.join(dataDir, 'daily-pinned.json');
 let pinned = {};
@@ -107,7 +107,7 @@ const server = http.createServer(async (request, response) => {
   // Older copies of the site called /letterboxd-game/api/..., so both prefixes work.
   const pathname = new URL(request.url, 'http://localhost').pathname.replace(/^\/letterboxd-game(?=\/)/, '');
   if (pathname === '/health') {
-    json(request, response, 200, { status: 'ok', checks, lastVerifyError });
+    json(request, response, 200, { status: 'ok', checks, recentFailures });
     return;
   }
   if (request.method === 'OPTIONS' && pathname.startsWith('/api/')) {
@@ -152,7 +152,12 @@ const server = http.createServer(async (request, response) => {
       const { questionId, answer } = await readJson(request);
       let result;
       try { result = await verifier.verify(questionId, answer); }
-      catch (error) { lastVerifyError = String(error.message).replace(/api_key=[^&\s]+/g, 'api_key=***'); throw error; }
+      catch (error) {
+        recentFailures.push({ time: new Date().toISOString(), questionId,
+          error: String(error.message).replace(/api_key=[^&\s]+/g, 'api_key=***') });
+        if (recentFailures.length > 10) recentFailures.shift();
+        throw error;
+      }
       json(request, response, result.status === 'invalid' ? 400 : 200, result);
     } else {
       json(request, response, 404, { error: 'Endpoint not found.' });
