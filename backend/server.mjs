@@ -34,8 +34,10 @@ function poolPoster(movie) {
 }
 
 const browser = createBrowserFetcher();
+let ratedBrowserResult = null;
 const watchlists = createWatchlistService({ browserFetch: browser.fetchPage,
-  posterForTmdb: async (id) => postersById.get(id) || null });
+  posterForTmdb: async (id) => postersById.get(id) || null,
+  onBrowserResult: (result) => { ratedBrowserResult = result; } });
 const verifier = await createVerifier({ catalog, dataFile: learnedFile,
   tmdbKey: process.env.TMDB_API_KEY,
   deepseekKey: process.env.DEEPSEEK_API_KEY,
@@ -98,7 +100,7 @@ async function readJson(request) {
 const server = http.createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   if (pathname === '/health') {
-    json(request, response, 200, { status: 'ok' });
+    json(request, response, 200, { status: 'ok', ratedBrowserResult });
     return;
   }
   if (request.method === 'OPTIONS' && pathname.startsWith('/letterboxd-game/api/')) {

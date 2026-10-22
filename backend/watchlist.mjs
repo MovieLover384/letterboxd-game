@@ -108,14 +108,24 @@ function shuffled(items) {
 
 // `browserFetch` reads a page through a real browser. Letterboxd refuses plain requests for rating
 // lists, so those pages use it first and fall back to a plain request if no browser is available.
-export function createWatchlistService({ fetchImpl = fetch, browserFetch = null, posterForTmdb = async () => null } = {}) {
+export function createWatchlistService({ fetchImpl = fetch, browserFetch = null,
+  posterForTmdb = async () => null, onBrowserResult = () => {} } = {}) {
   const watchlists = new Map();
   const details = new Map();
   const pendingWatchlists = new Map();
   const pendingDetails = new Map();
 
   async function fetchHtml(url, { browser = false } = {}) {
-    let response = browser && browserFetch ? await browserFetch(url).catch(() => null) : null;
+    let response = null;
+    if (browser && browserFetch) {
+      try {
+        response = await browserFetch(url);
+        onBrowserResult({ status: response.status });
+      } catch (error) {
+        onBrowserResult({ error: error.message });
+        console.warn('Rated-page browser lookup failed:', error.message);
+      }
+    }
     if (!response) {
       try {
         response = await fetchImpl(url, {
