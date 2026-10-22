@@ -1,4 +1,5 @@
 import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=26';
+import { apiUrl } from './letterboxd-api.js?v=2';
 
 const $ = (id) => document.getElementById(id);
 const date = utcDay();
@@ -169,7 +170,7 @@ async function loadResultArt(question, item) {
   art.classList.add('loading');
   $('result-art-img').removeAttribute('src');
   try {
-    const response = await fetch(`api/image?kind=${target.kind}&id=${target.id}`);
+    const response = await fetch(apiUrl(`api/image?kind=${target.kind}&id=${target.id}`));
     const { path } = await response.json();
     if (run !== artRun) return;
     if (!path) throw new Error('No image');
@@ -244,7 +245,7 @@ async function verifyOnline(questionId, answer) {
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await new Promise((resolve) => setTimeout(resolve, 700));
     try {
-      const response = await fetch('api/verify', {
+      const response = await fetch(apiUrl('api/verify'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId, answer }),
         signal: AbortSignal.timeout(30000),
@@ -641,7 +642,7 @@ let catalog = null;
 // the catalog changes during the day. Without the server, the same prompts are worked out locally.
 async function loadDailyQuestions() {
   try {
-    const response = await fetch(`api/daily?date=${date}`, { cache: 'no-store' });
+    const response = await fetch(apiUrl(`api/daily?date=${date}`), { cache: 'no-store' });
     if (response.ok) {
       const { ids } = await response.json();
       const byId = new Map(catalog.questions.map((question) => [question.id, question]));
@@ -683,7 +684,7 @@ async function start() {
     if (!response.ok) throw new Error(`Catalog returned ${response.status}`);
     catalog = await response.json();
     try {
-      const learnedResponse = await fetch('api/learned', { cache: 'no-store' });
+      const learnedResponse = await fetch(apiUrl('api/learned'), { cache: 'no-store' });
       if (learnedResponse.ok) {
         const { answers: learned } = await learnedResponse.json();
         if (Array.isArray(learned)) learned.forEach(({ questionId, item }) =>

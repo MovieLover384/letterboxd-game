@@ -1,3 +1,5 @@
+import { apiRequest as api } from './letterboxd-api.js?v=2';
+
 const form = document.getElementById('watchlist-form');
 const usernameInput = document.getElementById('letterboxd-username');
 const loadButton = document.getElementById('load-button');
@@ -54,7 +56,6 @@ function message(element, text, error = false) {
   element.classList.toggle('error', error);
 }
 
-const api = window.letterboxdApi;
 
 function resetResult() {
   stage.classList.remove('is-spinning', 'is-landing');

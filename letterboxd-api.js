@@ -1,13 +1,17 @@
-// The public GitHub Pages site needs a separate server for Letterboxd lookups.
+// The public GitHub Pages site needs a separate server for live game requests.
 // Set this to the deployed backend origin; localhost keeps using the local Node server.
 const LETTERBOXD_API_ORIGIN = '';
 
-window.letterboxdApi = async function letterboxdApi(path, options) {
+export function apiUrl(path) {
   const publicPages = window.location.hostname === 'movielover384.github.io';
   if (publicPages && !LETTERBOXD_API_ORIGIN)
-    throw new Error('Letterboxd lookups are temporarily unavailable. Please try again later.');
+    throw new Error('The movie service is temporarily unavailable. Please try again later.');
   const origin = publicPages ? LETTERBOXD_API_ORIGIN : window.location.origin;
-  const url = new URL(`/letterboxd-game/${path}`, origin);
+  return new URL(`/letterboxd-game/${path}`, origin);
+}
+
+export async function apiRequest(path, options) {
+  const url = apiUrl(path);
   let response;
   try {
     response = await fetch(url, { ...options, signal: AbortSignal.timeout(90_000) });
@@ -17,4 +21,4 @@ window.letterboxdApi = async function letterboxdApi(path, options) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Could not load those films right now. Please try again.');
   return data;
-};
+}

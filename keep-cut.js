@@ -1,3 +1,5 @@
+import { apiRequest as api } from './letterboxd-api.js?v=2';
+
 const form = document.getElementById('keepcut-form');
 const usernameInput = document.getElementById('letterboxd-username');
 const startButton = document.getElementById('start-button');
@@ -51,7 +53,6 @@ function shuffle(items) {
   return result;
 }
 
-const api = window.letterboxdApi;
 
 function tally(choice) {
   return choices.filter((item) => item === choice).length;

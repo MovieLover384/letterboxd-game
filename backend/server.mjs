@@ -4,8 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWatchlistService, WatchlistError } from './watchlist.mjs';
 import { createBrowserFetcher } from './browser-fetch.mjs';
+import { createVerifier } from './answer-verifier.mjs';
+import { dailyQuestions, utcDay } from '../daily-core.mjs';
 
 const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dataDir = process.env.DATA_DIR || path.join(site, 'backend', '.data');
+await fs.mkdir(dataDir, { recursive: true });
+const learnedFile = path.join(dataDir, 'learned-answers.json');
+try { await fs.access(learnedFile); }
+catch { await fs.copyFile(path.join(site, 'backend', 'seed-learned-answers.json'), learnedFile); }
+const catalog = JSON.parse(await fs.readFile(path.join(site, 'daily-catalog.json'), 'utf8'));
 const moviePool = JSON.parse(await fs.readFile(path.join(site, 'movie-pool.json'), 'utf8'));
 const postersById = new Map(moviePool
   .filter((movie) => Number.isInteger(movie.id) && movie.poster?.startsWith('/'))
@@ -28,6 +36,23 @@ function poolPoster(movie) {
 const browser = createBrowserFetcher();
 const watchlists = createWatchlistService({ browserFetch: browser.fetchPage,
   posterForTmdb: async (id) => postersById.get(id) || null });
+const verifier = await createVerifier({ catalog, dataFile: learnedFile,
+  tmdbKey: process.env.TMDB_API_KEY,
+  deepseekKey: process.env.DEEPSEEK_API_KEY,
+  moviePosters: postersById });
+const pinnedFile = path.join(dataDir, 'daily-pinned.json');
+let pinned = {};
+try { pinned = JSON.parse(await fs.readFile(pinnedFile, 'utf8')); }
+catch (error) { if (error.code !== 'ENOENT') throw error; }
+let pinning = Promise.resolve();
+async function pinnedDaily(date) {
+  if (!pinned[date]) {
+    pinned[date] = dailyQuestions(catalog, date).map((question) => question.id);
+    pinning = pinning.catch(() => {}).then(() => fs.writeFile(pinnedFile, JSON.stringify(pinned) + '\n'));
+    await pinning;
+  }
+  return pinned[date];
+}
 const recent = new Map();
 const allowedOrigins = new Set([
   'https://movielover384.github.io',
@@ -107,6 +132,22 @@ const server = http.createServer(async (request, response) => {
     } else if (pathname === '/letterboxd-game/api/watchlist/spin' && request.method === 'POST') {
       const { username, runtime } = await readJson(request);
       json(request, response, 200, await watchlists.spin(username, runtime));
+    } else if (pathname === '/letterboxd-game/api/daily' && request.method === 'GET') {
+      const date = new URL(request.url, 'http://localhost').searchParams.get('date') || '';
+      if (date !== utcDay() && !pinned[date]) json(request, response, 404, { status: 'unavailable' });
+      else json(request, response, 200, { date, ids: await pinnedDaily(date) });
+    } else if (pathname === '/letterboxd-game/api/learned' && request.method === 'GET') {
+      json(request, response, 200, { answers: verifier.getLearned() });
+    } else if (pathname === '/letterboxd-game/api/image' && request.method === 'GET') {
+      const params = new URL(request.url, 'http://localhost').searchParams;
+      let poster = null;
+      try { poster = await verifier.image(params.get('kind'), Number(params.get('id'))); }
+      catch (error) { console.error('Image lookup failed:', error.message); }
+      json(request, response, 200, { path: poster });
+    } else if (pathname === '/letterboxd-game/api/verify' && request.method === 'POST') {
+      const { questionId, answer } = await readJson(request);
+      const result = await verifier.verify(questionId, answer);
+      json(request, response, result.status === 'invalid' ? 400 : 200, result);
     } else {
       json(request, response, 404, { error: 'Endpoint not found.' });
     }
