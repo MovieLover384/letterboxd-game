@@ -8,7 +8,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="higherorlower.css">
+<link rel="stylesheet" href="higherorlower.css?v=20261022">
 <link rel="stylesheet" href="theme.css?v=13">
 <script src="site-experience.js?v=4" defer></script>
 <script src="score-style.js?v=1" defer></script>
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadData() {
     members = await fetch('members.json').then(res => res.json());
-    favorites = await fetch('4fav_tmdb.json').then(res => res.json());
+    favorites = await fetch('4fav_tmdb.json?v=20261022').then(res => res.json());
 
     const favoriteUsernames = favorites.map(f => f.username);
     members = members.filter(member => member.stats && typeof member.stats.this_year === 'number' && favoriteUsernames.includes(member.username));

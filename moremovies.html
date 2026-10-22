@@ -108,7 +108,7 @@ window.addEventListener('resize', updateButtonLabels);
 
 async function loadData() {
     members = await fetch('members.json').then(res => res.json());
-    favorites = await fetch('4fav_tmdb.json').then(res => res.json());
+    favorites = await fetch('4fav_tmdb.json?v=20261022').then(res => res.json());
 
     members = members.filter(member => {
         return favorites.some(f => f.username === member.username && f.favorites && f.favorites.length > 0);

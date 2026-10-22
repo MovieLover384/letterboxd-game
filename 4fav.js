@@ -161,7 +161,7 @@ function finishRound(selectedTitle = null) {
 
 async function loadUsers() {
   try {
-    const response = await fetch('4fav_tmdb.json');
+    const response = await fetch('4fav_tmdb.json?v=20261022');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     round.users = (await response.json()).filter(user =>
       user?.favorites?.length === 4 &&
