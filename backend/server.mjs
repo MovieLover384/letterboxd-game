@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWatchlistService, WatchlistError } from './watchlist.mjs';
-import { createBrowserFetcher } from './browser-fetch.mjs';
 import { createVerifier } from './answer-verifier.mjs';
 import { runChecks } from './diagnostics.mjs';
 import { dailyQuestions, utcDay } from '../daily-core.mjs';
@@ -34,20 +33,13 @@ function poolPoster(movie) {
   return nearby.length === 1 ? `https://image.tmdb.org/t/p/w342${nearby[0].poster}` : null;
 }
 
-const browser = createBrowserFetcher();
-let ratedBrowserResult = null;
-const watchlists = createWatchlistService({ browserFetch: browser.fetchPage,
-  posterForTmdb: async (id) => postersById.get(id) || null,
-  onBrowserResult: (result) => { ratedBrowserResult = result; } });
+const watchlists = createWatchlistService({ posterForTmdb: async (id) => postersById.get(id) || null });
 const verifier = await createVerifier({ catalog, dataFile: learnedFile,
   tmdbKey: process.env.TMDB_API_KEY,
   deepseekKey: process.env.DEEPSEEK_API_KEY,
   moviePosters: postersById });
 let lastVerifyError = null;
-const checks = runChecks({ tmdbKey: process.env.TMDB_API_KEY, deepseekKey: process.env.DEEPSEEK_API_KEY,
-  browserFetch: browser.fetchPage,
-  letterboxdProbes: ['/schaffrillas/films/rated/5/by/date/', '/schaffrillas/films/rated/5/',
-    '/schaffrillas/rss/', '/schaffrillas/films/ratings/'] });
+const checks = runChecks({ tmdbKey: process.env.TMDB_API_KEY, deepseekKey: process.env.DEEPSEEK_API_KEY });
 const pinnedFile = path.join(dataDir, 'daily-pinned.json');
 let pinned = {};
 try { pinned = JSON.parse(await fs.readFile(pinnedFile, 'utf8')); }
@@ -106,7 +98,7 @@ async function readJson(request) {
 const server = http.createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   if (pathname === '/health') {
-    json(request, response, 200, { status: 'ok', ratedBrowserResult, checks, lastVerifyError });
+    json(request, response, 200, { status: 'ok', checks, lastVerifyError });
     return;
   }
   if (request.method === 'OPTIONS' && pathname.startsWith('/letterboxd-game/api/')) {
@@ -132,11 +124,6 @@ const server = http.createServer(async (request, response) => {
       const movies = await watchlists.loadWatchlist(username);
       json(request, response, 200, { username: username.trim(), count: movies.length,
         movies: movies.map((movie) => ({ ...movie, poster: poolPoster(movie) })) });
-    } else if (pathname === '/letterboxd-game/api/keepcut' && request.method === 'GET') {
-      const params = new URL(request.url, 'http://localhost').searchParams;
-      const deal = await watchlists.dealKeepCut(params.get('username') || '', params.get('min') || '5');
-      json(request, response, 200, { count: deal.count,
-        movies: deal.movies.map((movie) => ({ ...movie, poster: movie.poster || poolPoster(movie) })) });
     } else if (pathname === '/letterboxd-game/api/watchlist/spin' && request.method === 'POST') {
       const { username, runtime } = await readJson(request);
       json(request, response, 200, await watchlists.spin(username, runtime));
@@ -170,6 +157,6 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => browser.close().finally(() => process.exit()));
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => process.exit());
 server.listen(Number(process.env.PORT) || 8788, '0.0.0.0', () =>
   console.log(`Letterboxd API listening on ${server.address().port}`));

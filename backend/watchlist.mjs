@@ -33,12 +33,6 @@ function attribute(tag, name) {
   return match ? decodeEntities(match[1] ?? match[2]) : null;
 }
 
-export const ratingChoices = ['5', '4.5', '4'];
-
-export function ratingLabel(minimum) {
-  return minimum === '5' ? '5★' : `${minimum}★ or higher`;
-}
-
 export function parseFilmListPage(html, listPath) {
   const movies = [];
   for (const match of html.matchAll(/<div\b[^>]*\bdata-component-class="LazyPoster"[^>]*>/g)) {
@@ -65,10 +59,6 @@ export function parseFilmListPage(html, listPath) {
 
 export function parseWatchlistPage(html, username) {
   return parseFilmListPage(html, `/${username.toLowerCase()}/watchlist/`);
-}
-
-export function parseRatedPage(html, username, rating) {
-  return parseFilmListPage(html, `/${username.toLowerCase()}/films/rated/${rating}/`);
 }
 
 export function parseFilmDetails(html) {
@@ -106,35 +96,21 @@ function shuffled(items) {
   return result;
 }
 
-// `browserFetch` reads a page through a real browser. Letterboxd refuses plain requests for rating
-// lists, so those pages use it first and fall back to a plain request if no browser is available.
-export function createWatchlistService({ fetchImpl = fetch, browserFetch = null,
-  posterForTmdb = async () => null, onBrowserResult = () => {} } = {}) {
+export function createWatchlistService({ fetchImpl = fetch, posterForTmdb = async () => null } = {}) {
   const watchlists = new Map();
   const details = new Map();
   const pendingWatchlists = new Map();
   const pendingDetails = new Map();
 
-  async function fetchHtml(url, { browser = false } = {}) {
-    let response = null;
-    if (browser && browserFetch) {
-      try {
-        response = await browserFetch(url);
-        onBrowserResult({ status: response.status });
-      } catch (error) {
-        onBrowserResult({ error: error.message });
-        console.warn('Rated-page browser lookup failed:', error.message);
-      }
-    }
-    if (!response) {
-      try {
-        response = await fetchImpl(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieKnowledge/1.0)', Accept: 'text/html' },
-          signal: AbortSignal.timeout(12000),
-        });
-      } catch {
-        throw new WatchlistError(503, 'Could not reach Letterboxd right now. Please try again.');
-      }
+  async function fetchHtml(url) {
+    let response;
+    try {
+      response = await fetchImpl(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieKnowledge/1.0)', Accept: 'text/html' },
+        signal: AbortSignal.timeout(12000),
+      });
+    } catch {
+      throw new WatchlistError(503, 'Could not reach Letterboxd right now. Please try again.');
     }
     if (response.status === 404) throw new WatchlistError(404, 'That public Letterboxd profile could not be found. Check the username.');
     if (response.status === 403 || response.status === 429)
@@ -149,20 +125,20 @@ export function createWatchlistService({ fetchImpl = fetch, browserFetch = null,
 
   // Loads every page of one Letterboxd film list. `pagePath` is where page 1 lives and `listPath`
   // is the prefix every pagination link on it shares.
-  async function loadFilmList(key, pagePath, listPath, emptyMessage, { browser = false } = {}) {
+  async function loadFilmList(key, pagePath, listPath, emptyMessage) {
     const cached = watchlists.get(key);
     if (cached && Date.now() - cached.time < cacheLife) return cached.movies;
     if (pendingWatchlists.has(key)) return pendingWatchlists.get(key);
     const parse = (html) => parseFilmListPage(html, listPath);
     const pending = (async () => {
-      const first = parse(await fetchHtml(`${letterboxd}${pagePath}`, { browser }));
+      const first = parse(await fetchHtml(`${letterboxd}${pagePath}`));
       const pages = new Map([[1, first]]);
       let lastPage = Math.max(first.lastPage, first.next || 1);
       if (lastPage > maximumPages) throw new WatchlistError(422, 'This list is too large to load right now.');
       for (let start = 2; start <= lastPage; start += 4) {
         const numbers = Array.from({ length: Math.min(4, lastPage - start + 1) }, (_, i) => start + i);
         const loaded = await Promise.all(numbers.map(async (number) =>
-          [number, parse(await fetchHtml(`${letterboxd}${pagePath}page/${number}/`, { browser }))]));
+          [number, parse(await fetchHtml(`${letterboxd}${pagePath}page/${number}/`))]));
         for (const [number, page] of loaded) {
           pages.set(number, page);
           lastPage = Math.max(lastPage, page.lastPage, page.next || 1);
@@ -190,13 +166,6 @@ export function createWatchlistService({ fetchImpl = fetch, browserFetch = null,
     const path = `/${encodeURIComponent(handle)}/watchlist/`;
     return loadFilmList(handle, path, `/${handle}/watchlist/`,
       'This watchlist is empty or private. Only public watchlists can be used.');
-  }
-
-  async function loadRated(username, rating) {
-    const handle = username.trim().toLowerCase();
-    return loadFilmList(`${handle}/rated/${rating}`,
-      `/${encodeURIComponent(handle)}/films/rated/${rating}/by/date/`, `/${handle}/films/rated/${rating}/`,
-      null, { browser: true });
   }
 
   async function filmDetails(movie) {
@@ -241,30 +210,5 @@ export function createWatchlistService({ fetchImpl = fetch, browserFetch = null,
     throw new WatchlistError(404, 'No films with a known runtime match that range. Try another length.');
   }
 
-  // Eight films picked at random from the films the user rated at least `minimum` stars.
-  async function dealKeepCut(username, minimum = '5', size = 8) {
-    if (!validUsername(username)) throw new WatchlistError(400, 'Enter a valid Letterboxd username.');
-    if (!ratingChoices.includes(minimum)) throw new WatchlistError(400, 'Choose a valid rating option.');
-    const tiers = ratingChoices.slice(0, ratingChoices.indexOf(minimum) + 1);
-    const lists = await Promise.all(tiers.map((rating) => loadRated(username, rating)));
-    const pool = [...new Map(lists.flat().map((movie) => [movie.url, movie])).values()];
-    if (pool.length < size) {
-      const found = pool.length
-        ? `only has ${pool.length} film${pool.length === 1 ? '' : 's'} rated ${ratingLabel(minimum)}`
-        : `has no public films rated ${ratingLabel(minimum)}`;
-      const advice = minimum === ratingChoices.at(-1) ? '' : ' Try a lower rating.';
-      throw new WatchlistError(422, `@${username.trim()} ${found}, and the game needs ${size}.${advice}`);
-    }
-    return { count: pool.length, movies: await describeFilms(shuffled(pool).slice(0, size)) };
-  }
-
-  // Adds a poster and runtime to each film; a film whose page cannot be read is still playable.
-  async function describeFilms(movies) {
-    return Promise.all(movies.map(async (movie) => {
-      try { return { ...movie, ...await filmDetails(movie) }; }
-      catch { return { ...movie, runtime: null, poster: null }; }
-    }));
-  }
-
-  return { loadWatchlist, spin, dealKeepCut };
+  return { loadWatchlist, spin };
 }
