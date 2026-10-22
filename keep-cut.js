@@ -51,14 +51,7 @@ function shuffle(items) {
   return result;
 }
 
-async function api(url, options) {
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || 'Something went wrong. Please try again.');
-  }
-  return data;
-}
+const api = window.letterboxdApi;
 
 function tally(choice) {
   return choices.filter((item) => item === choice).length;

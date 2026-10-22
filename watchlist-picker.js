@@ -54,12 +54,7 @@ function message(element, text, error = false) {
   element.classList.toggle('error', error);
 }
 
-async function api(url, options) {
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
-  return data;
-}
+const api = window.letterboxdApi;
 
 function resetResult() {
   stage.classList.remove('is-spinning', 'is-landing');

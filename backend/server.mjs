@@ -7,6 +7,9 @@ import { createBrowserFetcher } from './browser-fetch.mjs';
 
 const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const moviePool = JSON.parse(await fs.readFile(path.join(site, 'movie-pool.json'), 'utf8'));
+const postersById = new Map(moviePool
+  .filter((movie) => Number.isInteger(movie.id) && movie.poster?.startsWith('/'))
+  .map((movie) => [movie.id, movie.poster]));
 const posterTitles = new Map();
 for (const movie of moviePool) {
   if (!movie.poster?.startsWith('/') || !movie.title || !Number.isInteger(movie.year)) continue;
@@ -23,7 +26,8 @@ function poolPoster(movie) {
 }
 
 const browser = createBrowserFetcher();
-const watchlists = createWatchlistService({ browserFetch: browser.fetchPage });
+const watchlists = createWatchlistService({ browserFetch: browser.fetchPage,
+  posterForTmdb: async (id) => postersById.get(id) || null });
 const recent = new Map();
 const allowedOrigins = new Set([
   'https://movielover384.github.io',
