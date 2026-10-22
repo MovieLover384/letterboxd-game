@@ -55,6 +55,8 @@ async function pinnedDaily(date) {
 }
 const recent = new Map();
 const allowedOrigins = new Set([
+  'https://movieknowledge.xyz',
+  'https://www.movieknowledge.xyz',
   'https://movielover384.github.io',
   'http://127.0.0.1:8787',
   'http://localhost:8787',
@@ -96,12 +98,13 @@ async function readJson(request) {
 }
 
 const server = http.createServer(async (request, response) => {
-  const pathname = new URL(request.url, 'http://localhost').pathname;
+  // Older copies of the site called /letterboxd-game/api/..., so both prefixes work.
+  const pathname = new URL(request.url, 'http://localhost').pathname.replace(/^\/letterboxd-game(?=\/)/, '');
   if (pathname === '/health') {
     json(request, response, 200, { status: 'ok', checks, lastVerifyError });
     return;
   }
-  if (request.method === 'OPTIONS' && pathname.startsWith('/letterboxd-game/api/')) {
+  if (request.method === 'OPTIONS' && pathname.startsWith('/api/')) {
     if (!request.headers.origin || !allowedOrigins.has(request.headers.origin)) {
       response.writeHead(403).end();
       return;
@@ -119,27 +122,27 @@ const server = http.createServer(async (request, response) => {
     return;
   }
   try {
-    if (pathname === '/letterboxd-game/api/watchlist' && request.method === 'GET') {
+    if (pathname === '/api/watchlist' && request.method === 'GET') {
       const username = new URL(request.url, 'http://localhost').searchParams.get('username') || '';
       const movies = await watchlists.loadWatchlist(username);
       json(request, response, 200, { username: username.trim(), count: movies.length,
         movies: movies.map((movie) => ({ ...movie, poster: poolPoster(movie) })) });
-    } else if (pathname === '/letterboxd-game/api/watchlist/spin' && request.method === 'POST') {
+    } else if (pathname === '/api/watchlist/spin' && request.method === 'POST') {
       const { username, runtime } = await readJson(request);
       json(request, response, 200, await watchlists.spin(username, runtime));
-    } else if (pathname === '/letterboxd-game/api/daily' && request.method === 'GET') {
+    } else if (pathname === '/api/daily' && request.method === 'GET') {
       const date = new URL(request.url, 'http://localhost').searchParams.get('date') || '';
       if (date !== utcDay() && !pinned[date]) json(request, response, 404, { status: 'unavailable' });
       else json(request, response, 200, { date, ids: await pinnedDaily(date) });
-    } else if (pathname === '/letterboxd-game/api/learned' && request.method === 'GET') {
+    } else if (pathname === '/api/learned' && request.method === 'GET') {
       json(request, response, 200, { answers: verifier.getLearned() });
-    } else if (pathname === '/letterboxd-game/api/image' && request.method === 'GET') {
+    } else if (pathname === '/api/image' && request.method === 'GET') {
       const params = new URL(request.url, 'http://localhost').searchParams;
       let poster = null;
       try { poster = await verifier.image(params.get('kind'), Number(params.get('id'))); }
       catch (error) { console.error('Image lookup failed:', error.message); }
       json(request, response, 200, { path: poster });
-    } else if (pathname === '/letterboxd-game/api/verify' && request.method === 'POST') {
+    } else if (pathname === '/api/verify' && request.method === 'POST') {
       const { questionId, answer } = await readJson(request);
       let result;
       try { result = await verifier.verify(questionId, answer); }

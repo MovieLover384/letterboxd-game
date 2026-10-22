@@ -20,22 +20,22 @@
   <canvas id="confetti" aria-hidden="true"></canvas>
   <header class="site-header bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
     <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <a href="/" class="flex items-center gap-2">
         <div class="w-8 h-8 rounded-lg overflow-hidden">
           <img src="movieknowledge.ico" alt="MovieKnowledge Icon" class="w-full h-full object-cover">
         </div>
         <span class="text-xl font-serif font-bold">Movie<span class="text-gradient-accent">Knowledge</span></span>
       </a>
       <nav class="flex items-center gap-6" aria-label="Main navigation">
-        <a href="/letterboxd-game/" class="hover:text-white transition">Home</a>
-        <a href="/letterboxd-game/info" class="hover:text-white transition">Info</a>
+        <a href="/" class="hover:text-white transition">Home</a>
+        <a href="/info" class="hover:text-white transition">Info</a>
       </nav>
     </div>
   </header>
 
   <main>
     <div class="daily-shell">
-      <a class="back-link" href="/letterboxd-game/">← All games</a>
+      <a class="back-link" href="/">← All games</a>
       <div class="page-heading">
         <div class="heading-copy">
           <p class="eyebrow" id="mode-label">MOVIEKNOWLEDGE DAILY</p>
@@ -63,7 +63,7 @@
           <p>You get 45 seconds per prompt. Type a movie, character, or actor. Close matches can be corrected before you confirm.</p>
           <div class="tier-legend" aria-label="Points by rarity"><span class="points-badge tier-10">+10 well known</span><span class="points-badge tier-30">+30</span><span class="points-badge tier-60">+60</span><span class="points-badge tier-85">+85</span><span class="points-badge tier-100">+100 deep cut</span></div>
           <button id="start-button" class="primary-button key-hint-btn" type="button">Start today's challenge →</button>
-          <a id="welcome-unlimited-link" class="mode-switch-link" href="/letterboxd-game/daily.html?mode=unlimited">Play unlimited instead →</a>
+          <a id="welcome-unlimited-link" class="mode-switch-link" href="/daily.html?mode=unlimited">Play unlimited instead →</a>
         </div>
 
         <div id="question-view" hidden>
@@ -112,7 +112,7 @@
             <div class="section-heading"><h3 id="rounds-title">Your five answers</h3><span>Open a round to check the answers</span></div>
             <div id="round-list"></div>
           </section>
-          <div class="complete-footer"><p id="complete-note">Five new prompts arrive tomorrow.</p><div class="complete-actions"><a id="complete-unlimited-link" class="primary-button" href="/letterboxd-game/daily.html?mode=unlimited">Play unlimited →</a><button id="again-button" class="primary-button key-hint-btn" type="button" hidden>Play another round →</button><a class="complete-back-link" href="/letterboxd-game/">Back to games</a></div></div>
+          <div class="complete-footer"><p id="complete-note">Five new prompts arrive tomorrow.</p><div class="complete-actions"><a id="complete-unlimited-link" class="primary-button" href="/daily.html?mode=unlimited">Play unlimited →</a><button id="again-button" class="primary-button key-hint-btn" type="button" hidden>Play another round →</button><a class="complete-back-link" href="/">Back to games</a></div></div>
         </div>
 
         <div id="loading-view" class="loading-view">Loading today's challenge…</div>
@@ -123,7 +123,7 @@
   </main>
   <footer class="site-footer">
   <div class="site-footer-inner">
-    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <a class="site-footer-brand" href="/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
     <p class="footer-love">Made with <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ffbd68"/></linearGradient></defs><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 5.01 10.44 6.36 10.97 5.01 12.64 4 14.38 4 16.88 4 18.88 6 18.88 8.5 18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z" fill="url(#footer-heart-gradient)"/></svg> for film lovers.</p>
     <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
   </div>
