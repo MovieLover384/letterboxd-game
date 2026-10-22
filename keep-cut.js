@@ -1,5 +1,5 @@
 import { apiRequest as api } from './letterboxd-api.js?v=4';
-import { parseRatingsCsv } from './ratings-csv.mjs?v=1';
+import { parseRatingsCsv } from './ratings-csv.mjs?v=2';
 
 const form = document.getElementById('keepcut-form');
 const usernameInput = document.getElementById('letterboxd-username');
