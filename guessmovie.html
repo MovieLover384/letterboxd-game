@@ -89,6 +89,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="game-scores.js?v=1"></script>
+<script src="redact-title.js?v=1"></script>
 <script>
 const gameScoreboard = createGameScoreboard('guessmovie');
 let movies = [];
@@ -138,7 +139,7 @@ plotBtn.addEventListener("click", () => {
     plotDiv.className = "bg-gray-700/60 p-4 rounded-lg border border-gray-600 shadow-sm text-left flex flex-col gap-2 mt-2";
 
     plotDiv.innerHTML = `
-        <p><strong>Plot Summary:</strong> ${currentMovie.plot_summary}</p>
+        <p><strong>Plot Summary:</strong> ${redactTitle(currentMovie.plot_summary, currentMovie.title)}</p>
     `;
 
     infoContainer.appendChild(plotDiv);
@@ -156,7 +157,7 @@ charactersBtn.addEventListener("click", () => {
     charDiv.className = "bg-gray-700/60 p-4 rounded-lg border border-gray-600 shadow-sm text-left flex flex-col gap-2 mt-2";
 
     charDiv.innerHTML = `
-        <p><strong>Characters:</strong> ${currentMovie.characters.join(", ")}</p>
+        <p><strong>Characters:</strong> ${currentMovie.characters.map((name) => redactTitle(name, currentMovie.title)).join(", ")}</p>
     `;
 
     infoContainer.appendChild(charDiv);
