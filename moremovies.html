@@ -8,8 +8,11 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="moremovies.css">
+<link rel="stylesheet" href="theme.css?v=13">
+<script src="site-experience.js?v=4" defer></script>
+<script src="score-style.js?v=1" defer></script>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen game-page" data-game="moremovies">
 
 <header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
   <div class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -30,6 +33,7 @@
 
 <section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
   <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <a class="game-back" href="/letterboxd-game/">← All games</a>
     <h1 class="text-5xl md:text-6xl font-bold mb-4">Who Has <span class="text-gradient-accent">Watched More Movies?</span></h1>
     <p class="text-lg md:text-xl text-gray-400">Guess who has watched more films based on their top 4 favorites.</p>
   </div>
@@ -54,37 +58,12 @@
 </section>
 
 
-<footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
-  <h3 class="text-orange-500 mb-2">
-    MovieKnowledge ~ Fan project, Not affiliated with Letterboxd
-  </h3>
-  <p class="text-gray-400 mb-1 flex items-center justify-center gap-2">
-    Made with
-    <svg width="18" height="18" viewBox="0 0 24 24" class="inline-block">
-      <defs>
-        <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="hsl(25,95%,55%)"/>
-          <stop offset="100%" stop-color="hsl(35,90%,60%)"/>
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
-           2 6 4 4 6.5 4 
-           8.24 4 9.91 5.01 10.44 6.36 
-           10.97 5.01 12.64 4 14.38 4 
-           16.88 4 18.88 6 18.88 8.5 
-           18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z"
-        fill="url(#heartGradient)"
-      />
-    </svg>
-    for film lovers
-  </p>
-  <p class="text-gray-400">
-    Follow me on 
-    <a href="https://letterboxd.com/MovieLover384/" target="_blank" class="text-orange-500 hover:text-orange-400 underline">
-      Letterboxd
-    </a>
-  </p>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <p class="footer-love">Made with <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ffbd68"/></linearGradient></defs><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 5.01 10.44 6.36 10.97 5.01 12.64 4 14.38 4 16.88 4 18.88 6 18.88 8.5 18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z" fill="url(#footer-heart-gradient)"/></svg> for film lovers.</p>
+    <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
+  </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -129,7 +108,7 @@ window.addEventListener('resize', updateButtonLabels);
 
 async function loadData() {
     members = await fetch('members.json').then(res => res.json());
-    favorites = await fetch('4fav.json').then(res => res.json());
+    favorites = await fetch('4fav_tmdb.json').then(res => res.json());
 
     members = members.filter(member => {
         return favorites.some(f => f.username === member.username && f.favorites && f.favorites.length > 0);

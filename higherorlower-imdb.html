@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Higher or Lower: IMDb | MovieKnowledge</title>
+<link rel="icon" href="movieknowledge.ico" type="image/x-icon">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="higherorlower.css?v=1.2">
+<link rel="stylesheet" href="theme.css?v=14">
+<link rel="stylesheet" href="imdb-game.css?v=3">
+<script src="site-experience.js?v=4" defer></script>
+<script src="imdb-game.js?v=3" type="module"></script>
+</head>
+<body class="flex flex-col min-h-screen game-page" data-game="higherorlower-imdb">
+<header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg overflow-hidden"><img src="movieknowledge.ico" alt="MovieKnowledge Icon" class="w-full h-full object-cover"></div>
+      <span class="text-xl font-serif font-bold">Movie<span class="text-gradient-accent">Knowledge</span></span>
+    </a>
+    <nav class="flex items-center gap-6"><a href="/letterboxd-game/" class="hover:text-white transition">Home</a><a href="/letterboxd-game/info" class="hover:text-white transition">Info</a></nav>
+  </div>
+</header>
+<section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 overflow-hidden">
+  <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <a class="game-back" href="/letterboxd-game/">← All games</a>
+    <h1 class="text-5xl md:text-6xl font-bold mb-4">Higher or Lower: IMDb</h1>
+    <p id="hero-description" class="text-lg md:text-xl text-gray-400">Guess if the right film has a higher or lower IMDb rating than the left film.</p>
+  </div>
+</section>
+<section class="container mx-auto px-4 py-12 flex-1 text-center imdb-shell">
+  <div class="imdb-scores">
+    <div id="score" class="text-lg font-semibold">Score: 0</div>
+    <div id="highscore" class="text-lg font-semibold">High Score: 0</div>
+  </div>
+  <div class="imdb-mode" role="group" aria-label="Choose game mode">
+    <button type="button" data-mode="rating" aria-pressed="true">Average rating</button>
+    <button type="button" data-mode="votes" aria-pressed="false">User votes</button>
+  </div>
+  <p class="imdb-instruction" id="instruction">Is the right film's IMDb rating higher or lower than the left film's?</p>
+  <div id="imdb-arena" class="imdb-arena" hidden>
+    <article class="rating-card imdb-film" id="leftFilm">
+      <img alt="" class="imdb-poster shadow-xl">
+      <h2 class="text-xl font-bold mt-2"></h2>
+      <p class="imdb-year"></p>
+      <p class="imdb-number text-orange-500 text-lg font-semibold mt-1"></p>
+      <p class="imdb-meta text-gray-400 text-sm"></p>
+    </article>
+    <article class="rating-card imdb-film" id="rightFilm">
+      <img alt="" class="imdb-poster shadow-xl">
+      <h2 class="text-xl font-bold mt-2"></h2>
+      <p class="imdb-year"></p>
+      <p class="imdb-number text-orange-500 text-lg font-semibold mt-1"></p>
+      <p class="imdb-meta text-gray-400 text-sm"></p>
+    </article>
+  </div>
+  <p id="loading" class="imdb-loading" role="status">Loading films and ratings…</p>
+  <div class="imdb-controls" id="guess-controls" hidden>
+    <button type="button" id="higherBtn">Higher</button>
+    <button type="button" id="lowerBtn">Lower</button>
+  </div>
+  <p id="result" class="imdb-result" role="status" aria-live="polite"></p>
+  <button type="button" id="nextBtn" class="imdb-next" hidden>Next Round</button>
+</section>
+<footer class="site-footer"><div class="site-footer-inner">
+  <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+  <p class="footer-love">Made for film lovers.</p>
+  <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with IMDb or Letterboxd</span></div>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,202 @@
+[
+  {
+    "title": "Whiplash",
+    "src": "posters/whiplash.jpg",
+    "year": 2014
+  },
+  {
+    "title": "Interstellar",
+    "src": "posters/interstellar.jpg",
+    "year": 2014
+  },
+  {
+    "title": "Parasite",
+    "src": "posters/parasite.jpg",
+    "year": 2019
+  },
+  {
+    "title": "La La Land",
+    "src": "posters/lalaland.jpg",
+    "year": 2016
+  },
+  {
+    "title": "The Grand Budapest Hotel",
+    "src": "posters/grandbudapest.jpg",
+    "year": 2014
+  },
+  {
+    "title": "Moonlight",
+    "src": "posters/moonlight.jpg",
+    "year": 2016
+  },
+  {
+    "title": "Blade Runner 2049",
+    "src": "posters/bladerunner.jpg",
+    "year": 2017
+  },
+  {
+    "title": "The Matrix",
+    "src": "posters/matrix.jpg",
+    "year": 1999
+  },
+  {
+    "title": "Eternal Sunshine of the Spotless Mind",
+    "src": "posters/eternalsunshine.jpg",
+    "year": 2004
+  },
+  {
+    "title": "The Batman",
+    "src": "posters/thebatman.jpg",
+    "year": 2022
+  },
+  {
+    "title": "The Dark Knight",
+    "src": "posters/featured-155.jpg",
+    "year": 2008
+  },
+  {
+    "title": "Oppenheimer",
+    "src": "posters/featured-872585.jpg",
+    "year": 2023
+  },
+  {
+    "title": "Dune: Part Two",
+    "src": "posters/featured-693134.jpg",
+    "year": 2024
+  },
+  {
+    "title": "Spider-Man: Into the Spider-Verse",
+    "src": "posters/featured-324857.jpg",
+    "year": 2018
+  },
+  {
+    "title": "The Godfather",
+    "src": "posters/featured-238.jpg",
+    "year": 1972
+  },
+  {
+    "title": "Pulp Fiction",
+    "src": "posters/featured-680.jpg",
+    "year": 1994
+  },
+  {
+    "title": "Everything Everywhere All at Once",
+    "src": "posters/featured-545611.jpg",
+    "year": 2022
+  },
+  {
+    "title": "The Shawshank Redemption",
+    "src": "posters/featured-278.jpg",
+    "year": 1994
+  },
+  {
+    "title": "The Lord of the Rings: The Fellowship of the Ring",
+    "src": "posters/featured-120.jpg",
+    "year": 2001
+  },
+  {
+    "title": "Barbie",
+    "src": "posters/featured-346698.jpg",
+    "year": 2023
+  },
+  {
+    "title": "Mad Max: Fury Road",
+    "src": "posters/featured-76341.jpg",
+    "year": 2015
+  },
+  {
+    "title": "The Avengers",
+    "src": "posters/featured-24428.jpg",
+    "year": 2012
+  },
+  {
+    "title": "Gladiator",
+    "src": "posters/featured-98.jpg",
+    "year": 2000
+  },
+  {
+    "title": "Spirited Away",
+    "src": "posters/featured-129.jpg",
+    "year": 2001
+  },
+  {
+    "title": "Fight Club",
+    "src": "posters/featured-550.jpg",
+    "year": 1999
+  },
+  {
+    "title": "The Truman Show",
+    "src": "posters/featured-37165.jpg",
+    "year": 1998
+  },
+  {
+    "title": "The Social Network",
+    "src": "posters/featured-37799.jpg",
+    "year": 2010
+  },
+  {
+    "title": "The Wolf of Wall Street",
+    "src": "posters/featured-106646.jpg",
+    "year": 2013
+  },
+  {
+    "title": "Star Wars",
+    "src": "posters/featured-11.jpg",
+    "year": 1977
+  },
+  {
+    "title": "Jaws",
+    "src": "posters/featured-578.jpg",
+    "year": 1975
+  },
+  {
+    "title": "The Shining",
+    "src": "posters/featured-694.jpg",
+    "year": 1980
+  },
+  {
+    "title": "Back to the Future",
+    "src": "posters/featured-105.jpg",
+    "year": 1985
+  },
+  {
+    "title": "The Silence of the Lambs",
+    "src": "posters/featured-274.jpg",
+    "year": 1991
+  },
+  {
+    "title": "Get Out",
+    "src": "posters/featured-419430.jpg",
+    "year": 2017
+  },
+  {
+    "title": "Jurassic Park",
+    "src": "posters/featured-329.jpg",
+    "year": 1993
+  },
+  {
+    "title": "Inception",
+    "src": "posters/featured-27205.jpg",
+    "year": 2010
+  },
+  {
+    "title": "Titanic",
+    "src": "posters/featured-597.jpg",
+    "year": 1997
+  },
+  {
+    "title": "The Green Mile",
+    "src": "posters/featured-497.jpg",
+    "year": 1999
+  },
+  {
+    "title": "Alien",
+    "src": "posters/featured-348.jpg",
+    "year": 1979
+  },
+  {
+    "title": "The Lion King",
+    "src": "posters/featured-8587.jpg",
+    "year": 1994
+  }
+]

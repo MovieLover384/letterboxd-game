@@ -8,9 +8,17 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="home.css?v=1.3">
+<link rel="stylesheet" href="theme.css?v=19">
+<script src="site-experience.js?v=4" defer></script>
+<script type="module">
+  // Number today's Daily Challenge, counting from #1 on 20 October 2026.
+  import { dailyNumber } from './daily-core.mjs?v=26';
+  const number = dailyNumber();
+  if (number) document.getElementById('daily-number').textContent = ` - #${number}`;
+</script>
 </head>
 
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen home-page">
 
 <header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
   <div class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -29,194 +37,296 @@
   </div>
 </header>
 
-<div class="bg-orange-500 text-white overflow-hidden">
-  <div class="marquee-wrapper">
-    <div class="marquee-track">
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-      <span class="marquee-content">
-        Always looking for feedback and ideas for new games — 
-        <a href="mailto:movielover384.contact@gmail.com" class="underline hover:text-gray-200">contact mail!</a>
-      </span>
-    </div>
-  </div>
-</div>
+<div class="site-note"><div class="container mx-auto px-4">For people who love movies a little too much. <a href="mailto:movielover384.contact@gmail.com">Have an idea? Tell us ↗</a></div></div>
 
-<section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
-  <div class="relative z-10 max-w-3xl mx-auto px-4">
-    <h1 class="text-5xl md:text-6xl font-bold mb-4">
-      Movie<span class="text-gradient-accent">Knowledge</span>
-    </h1>
-    <p class="text-lg md:text-xl text-gray-400 max-w-xl mx-auto">
-      Test your film knowledge with games inspired by the world's favorite movie community.
-    </p>
+<section class="home-hero">
+  <div class="container mx-auto px-4 home-hero-inner">
+    <div class="home-hero-copy">
+      <h1>Movie nights.<br>Game nights.<br><em>One more round.</em></h1>
+      <p class="hero-description">Daily deep cuts and quick games for people who remember the cast, the credits, and that one movie nobody else has seen.</p>
+      <div class="hero-actions">
+        <a href="/letterboxd-game/daily.html" class="button button-primary">Play the daily challenge <span aria-hidden="true">↗</span></a>
+        <a href="#games" class="hero-secondary">Explore all games <span aria-hidden="true">↓</span></a>
+      </div>
+      <p class="hero-footnote">New challenge every day · No account needed</p>
+    </div>
+    <div class="hero-art poster-stage" aria-hidden="true">
+      <div class="poster-glow"></div>
+      <div class="poster-orbit poster-orbit-one"></div>
+      <div class="poster-orbit poster-orbit-two"></div>
+      <img class="floating-poster poster-far-left" src="posters/moonlight.jpg" alt="" width="112" height="168">
+      <img class="floating-poster poster-far-right" src="posters/bladerunner.jpg" alt="" width="112" height="168">
+      <img class="floating-poster poster-back-left" src="posters/whiplash.jpg" alt="" width="140" height="210">
+      <img class="floating-poster poster-back-right" src="posters/grandbudapest.jpg" alt="" width="140" height="210">
+      <img class="floating-poster poster-low-left" src="posters/eternalsunshine.jpg" alt="" width="118" height="177">
+      <img class="floating-poster poster-low-right" src="posters/matrix.jpg" alt="" width="118" height="177">
+      <img class="floating-poster poster-left" src="posters/lalaland.jpg" alt="" width="162" height="243">
+      <img class="floating-poster poster-right" src="posters/parasite.jpg" alt="" width="172" height="258">
+      <img class="floating-poster poster-main" src="posters/interstellar.jpg" alt="" width="215" height="323">
+    </div>
   </div>
 </section>
 
-<section class="container mx-auto px-4 py-16 flex-1">
-  <div class="flex items-center gap-3 mb-10">
+<section class="container mx-auto px-4 pt-14" aria-labelledby="daily-heading">
+  <div class="daily-feature">
+    <div>
+      <p class="daily-feature-label">DAILY MOVIE GAME</p>
+      <h2 id="daily-heading">Daily Challenge<span id="daily-number" class="daily-number"></span></h2>
+      <p>Five movie prompts every day. Think of an answer before the timer runs out.</p>
+    </div>
+    <div class="daily-feature-actions">
+      <a href="/letterboxd-game/daily.html" class="button button-primary daily-feature-button">Play today's challenge →</a>
+      <a href="/letterboxd-game/daily.html?mode=unlimited" class="daily-unlimited-link">Play unlimited →</a>
+    </div>
+  </div>
+</section>
+
+<section class="container mx-auto px-4 py-16 flex-1 games-section" id="games">
+  <p class="section-eyebrow">PICK YOUR NEXT ROUND</p>
+  <div class="flex items-center gap-3 mb-10 games-heading">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clapperboard w-5 h-5 text-primary"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"></path><path d="m6.2 5.3 3.1 3.9"></path><path d="m12.4 3.4 3.1 4"></path><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path></svg>
-    <h2 class="text-2xl md:text-3xl font-serif font-bold">Available Games</h2>
+    <h2 class="text-2xl md:text-3xl font-serif font-bold">Available Games</h2><span class="game-count">23 GAMES</span>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="card">
-      <h3 class="text-2xl font-bold mb-3">Guess the #1 Favorite</h3>
-      <p class="text-gray-400 mb-5">
-        We show you 3 of someone's 4 favorite films. Can you guess which movie is their all-time #1?
-      </p>
-      <a href="/letterboxd-game/4fav" class="button button-primary">Play Now</a>
+  <section class="game-category" id="movie-games" aria-labelledby="movie-games-heading">
+    <div class="game-category-heading">
+      <div>
+        <h3 id="movie-games-heading">Movie games</h3>
+        <p>Scenes, quotes, film facts, and your own movie picks.</p>
+      </div>
+      <span>16 GAMES</span>
     </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 games-grid">
+      <div class="card relative" data-game="guessframe">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Guess the Scene</h4>
+        <p class="text-gray-400 mb-5">Six scenes from one movie, shown one at a time. Name the film in as few frames as you can.</p>
+        <a href="/letterboxd-game/guessframe" class="button button-primary">Play Now</a>
+      </div>
 
-    <div class="card">
-      <h3 class="text-2xl font-bold mb-3">Who Has Watched More Movies?</h3>
-      <p class="text-gray-400 mb-5">
-        We show you 2 users and their 4 favorite films. Guess who has watched more movies.
-      </p>
-      <a href="/letterboxd-game/moremovies" class="button button-primary">Play Now</a>
+      <div class="card relative" data-game="guesssound">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Movie Quote Quiz</h4>
+        <p class="text-gray-400 mb-5">Hear a famous film line and name its movie. Each hint lowers the points you can earn.</p>
+        <a href="/letterboxd-game/guesssound" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="cast-connection">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Cast Connection</h4>
+        <p class="text-gray-400 mb-5">Two films share a leading actor. Use the cast you know to find the connection.</p>
+        <a href="/letterboxd-game/knowledge-game.html?mode=cast" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="directors-cut">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Director's Cut</h4>
+        <p class="text-gray-400 mb-5">Three films, one filmmaker. Name the director behind the whole set.</p>
+        <a href="/letterboxd-game/knowledge-game.html?mode=director" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="director-timeline">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Director Timeline</h4>
+        <p class="text-gray-400 mb-5">Put four films from the same director in order from earliest to latest.</p>
+        <a href="/letterboxd-game/knowledge-game.html?mode=timeline" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="higherorlower-imdb">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Higher or Lower: IMDb</h4>
+        <p class="text-gray-400 mb-5">Compare movie ratings or vote counts from IMDb. How long can your streak last?</p>
+        <a href="/letterboxd-game/higherorlower-imdb" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="guessmovie">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          New
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Guess the Movie</h4>
+        <p class="text-gray-400 mb-5">
+          We show you info about a movie, you try to guess which movie it is.
+        </p>
+        <a href="/letterboxd-game/guessmovie" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="actorguess">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          New
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Guess the Actor</h4>
+        <p class="text-gray-400 mb-5">
+          We show you 3–5 of their biggest movies and you try to name the actor.
+        </p>
+        <a href="/letterboxd-game/actorguess" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="badplot">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          New
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Guess Movie: Plot Explained Terrible</h4>
+        <p class="text-gray-400 mb-5">
+          We show you a terrible plot explanation and you try to guess the correct movie.
+        </p>
+        <a href="/letterboxd-game/badplot" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="higherorlower-year">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          New
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Newer or Older: Release Year</h4>
+        <p class="text-gray-400 mb-5">
+          Guess if the right film was released in a newer or older year than the left film.
+        </p>
+        <a href="/letterboxd-game/higherorlower-year" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="movie-throne">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Movie Throne</h4>
+        <p class="text-gray-400 mb-5">Choose your favorite of two films. The winner stays until another movie takes its place.</p>
+        <a href="/letterboxd-game/movie-throne" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="blind-ranking">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Blind Ranking</h4>
+        <p class="text-gray-400 mb-5">Get ten random films one at a time and rank each from 1 to 10 before you see the next. No take-backs.</p>
+        <a href="/letterboxd-game/blind-ranking" class="button button-primary">Play Now</a>
+      </div>
+      <div class="card relative" data-game="posterreveal">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Poster Reveal</h4>
+        <p class="text-gray-400 mb-5">A famous poster, blurred beyond recognition. Every wrong guess makes it sharper. Name it early for more points.</p>
+        <a href="/letterboxd-game/posterreveal" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="mastermind">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Movie Mastermind</h4>
+        <p class="text-gray-400 mb-5">Find the mystery film in eight guesses. Each guess shows how close its year, genres, director, cast and runtime are.</p>
+        <a href="/letterboxd-game/mastermind" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="tagline">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Tagline Quiz</h4>
+        <p class="text-gray-400 mb-5">Read the line from the poster, without the title, and pick the film it belongs to. How long can your streak last?</p>
+        <a href="/letterboxd-game/tagline" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="higherorlower-runtime">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Longer or Shorter: Runtime</h4>
+        <p class="text-gray-400 mb-5">Guess if the right film runs longer or shorter than the left film. How long can your streak last?</p>
+        <a href="/letterboxd-game/higherorlower-runtime" class="button button-primary">Play Now</a>
+      </div>
     </div>
+  </section>
 
-    <div class="card">
-      <h3 class="text-2xl font-bold mb-3">Higher or Lower: Films This Year</h3>
-      <p class="text-gray-400 mb-5">
-        We show you 2 users. Guess who has watched more films this year.
-      </p>
-      <a href="/letterboxd-game/higherorlower" class="button button-primary">Play Now</a>
+  <section class="game-category" id="letterboxd-games" aria-labelledby="letterboxd-games-heading">
+    <div class="game-category-heading">
+      <div>
+        <h3 id="letterboxd-games-heading">Letterboxd games</h3>
+        <p>Guess from favorites, reviews, watched films, and community ratings, or play with your own top rated.</p>
+      </div>
+      <span>7 GAMES</span>
     </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 games-grid">
+      <div class="card" data-game="4fav">
+        <h4 class="text-2xl font-bold mb-3">Guess the #1 Favorite</h4>
+        <p class="text-gray-400 mb-5">
+          See three favorites, then pick their #1 from four movie choices.
+        </p>
+        <a href="/letterboxd-game/4fav" class="button button-primary">Play Now</a>
+      </div>
 
-    <div class="card">
-      <h3 class="text-2xl font-bold mb-3">Fake Favorite Guesser</h3>
-      <p class="text-gray-400 mb-5">
-        We show you 5 films, 4 of which are real favorites and you try to guess which one is fake.
-      </p>
-      <a href="/letterboxd-game/fakefavorite" class="button button-primary">Play Now</a>
+      <div class="card" data-game="moremovies">
+        <h4 class="text-2xl font-bold mb-3">Who Has Watched More Movies?</h4>
+        <p class="text-gray-400 mb-5">
+          We show you 2 users and their 4 favorite films. Guess who has watched more movies.
+        </p>
+        <a href="/letterboxd-game/moremovies" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card" data-game="higherorlower">
+        <h4 class="text-2xl font-bold mb-3">Higher or Lower: Films This Year</h4>
+        <p class="text-gray-400 mb-5">
+          We show you 2 users. Guess who has watched more films this year.
+        </p>
+        <a href="/letterboxd-game/higherorlower" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card" data-game="fakefavorite">
+        <h4 class="text-2xl font-bold mb-3">Fake Favorite Guesser</h4>
+        <p class="text-gray-400 mb-5">
+          We show you 5 films, 4 of which are real favorites and you try to guess which one is fake.
+        </p>
+        <a href="/letterboxd-game/fakefavorite" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="reviewguess">
+        <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          Updated
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Review Guesser</h4>
+        <p class="text-gray-400 mb-5">
+          We show you reviews, you guess which movie they belong to.
+        </p>
+        <a href="/letterboxd-game/reviewguess" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="higherorlower-rating">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
+          New
+        </span>
+        <h4 class="text-2xl font-bold mb-3">Higher or Lower: Average Rating</h4>
+        <p class="text-gray-400 mb-5">
+          Guess if the right film has a higher or lower average Letterboxd rating than the left film.
+        </p>
+        <a href="/letterboxd-game/higherorlower-rating" class="button button-primary">Play Now</a>
+      </div>
+
+      <div class="card relative" data-game="keep-cut">
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+        <h4 class="text-2xl font-bold mb-3">Keep 4, Cut 4</h4>
+        <p class="text-gray-400 mb-5">Enter your username and get eight random films from your top ratings. Keep four, cut four.</p>
+        <a href="/letterboxd-game/keep-cut" class="button button-primary">Play Now</a>
+      </div>
     </div>
+  </section>
+</section>
 
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        Updated
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Review Guesser</h3>
-      <p class="text-gray-400 mb-5">
-        We show you reviews, you guess which movie they belong to.
-      </p>
-      <a href="/letterboxd-game/reviewguess" class="button button-primary">Play Now</a>
+<section class="container mx-auto px-4 tools-section" id="tools" aria-labelledby="tools-heading">
+  <p class="section-eyebrow">A LITTLE HELP FOR MOVIE NIGHT</p>
+  <div class="tools-heading">
+    <h2 id="tools-heading">Tools</h2>
+    <span>1 TOOL</span>
+  </div>
+  <div class="tool-feature">
+    <div>
+      <p class="tool-feature-label">LETTERBOXD WATCHLIST TOOL</p>
+      <h3>Watchlist Picker</h3>
+      <p>Can't choose what to watch? Enter your Letterboxd username, pick an optional film length, and spin for a movie from your public watchlist.</p>
+      <a href="/letterboxd-game/watchlist-picker" class="button button-primary">Pick a movie <span aria-hidden="true">↗</span></a>
     </div>
-
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        New
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Higher or Lower: Average Rating</h3>
-      <p class="text-gray-400 mb-5">
-        Guess if the right film has a higher or lower average Letterboxd rating than the left film.
-      </p>
-      <a href="/letterboxd-game/higherorlower-rating" class="button button-primary">Play Now</a>
-    </div>
-
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        New
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Newer or Older: Release Year</h3>
-      <p class="text-gray-400 mb-5">
-        Guess if the right film was released in a newer or older year than the left film.
-      </p>
-      <a href="/letterboxd-game/higherorlower-year" class="button button-primary">Play Now</a>
-    </div>
-
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        New
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Guess the Movie</h3>
-      <p class="text-gray-400 mb-5">
-        We show you info about a movie, you try to guess which movie it is.
-      </p>
-      <a href="/letterboxd-game/guessmovie" class="button button-primary">Play Now</a>
-    </div>
-
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        New
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Guess Movie: Plot Explained Terrible</h3>
-      <p class="text-gray-400 mb-5">
-        We show you a terrible plot explanation and you try to guess the correct movie.
-      </p>
-      <a href="/letterboxd-game/badplot" class="button button-primary">Play Now</a>
-    </div>
-
-    <div class="card relative">
-      <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full uppercase">
-        New
-      </span>
-      <h3 class="text-2xl font-bold mb-3">Guess the Actor</h3>
-      <p class="text-gray-400 mb-5">
-        We show you 3–5 of their biggest movies and you try to name the actor.
-      </p>
-      <a href="/letterboxd-game/actorguess" class="button button-primary">Play Now</a>
-    </div>
-
-    <div class="card">
-      <h3 class="text-2xl font-bold mb-3">Coming Soon...</h3>
-      <p class="text-gray-400 mb-5">
-        More film games are on the way. Stay tuned for new ways to test your cinema knowledge!
-      </p>
-      <a href="/letterboxd-game/info" class="button button-secondary">Learn More</a>
+    <div class="tool-feature-art" aria-hidden="true">
+      <div class="tool-feature-poster tool-feature-poster-left"><img src="posters/whiplash.jpg" alt=""></div>
+      <div class="tool-feature-poster tool-feature-poster-center"><img src="posters/interstellar.jpg" alt=""></div>
+      <div class="tool-feature-poster tool-feature-poster-right"><img src="posters/parasite.jpg" alt=""></div>
+      <span class="tool-feature-pointer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"></path><path d="m6.2 5.3 3.1 3.9"></path><path d="m12.4 3.4 3.1 4"></path><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path></svg></span>
     </div>
   </div>
 </section>
 
-<footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
-  <h3 class="text-orange-500 mb-2">
-    MovieKnowledge ~ Fan project, Not affiliated with Letterboxd
-  </h3>
-  <p class="text-gray-400 mb-1 flex items-center justify-center gap-2">
-    Made with
-    <svg width="18" height="18" viewBox="0 0 24 24" class="inline-block">
-      <defs>
-        <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="hsl(25,95%,55%)"/>
-          <stop offset="100%" stop-color="hsl(35,90%,60%)"/>
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
-           2 6 4 4 6.5 4 
-           8.24 4 9.91 5.01 10.44 6.36 
-           10.97 5.01 12.64 4 14.38 4 
-           16.88 4 18.88 6 18.88 8.5 
-           18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z"
-        fill="url(#heartGradient)"
-      />
-    </svg>
-    for film lovers
-  </p>
-  <p class="text-gray-400">
-    Follow me on 
-    <a href="https://letterboxd.com/MovieLover384/" target="_blank" class="text-orange-500 hover:text-orange-400 underline">
-      Letterboxd
-    </a>
-  </p>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <p class="footer-love">Made with <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ffbd68"/></linearGradient></defs><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 5.01 10.44 6.36 10.97 5.01 12.64 4 14.38 4 16.88 4 18.88 6 18.88 8.5 18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z" fill="url(#footer-heart-gradient)"/></svg> for film lovers.</p>
+    <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
+  </div>
 </footer>
 </body>
 </html>

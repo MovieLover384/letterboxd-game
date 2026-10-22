@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Quote Quiz</title>
+<meta name="description" content="Listen to a famous movie line and name the film. Take a hint for fewer points.">
+<link rel="icon" href="movieknowledge.ico" type="image/x-icon">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="4fav.css">
+<link rel="stylesheet" href="theme.css?v=15">
+<link rel="stylesheet" href="guessframe.css?v=2">
+<link rel="stylesheet" href="guesssound.css?v=7">
+<script src="site-experience.js?v=4" defer></script>
+<script src="score-style.js?v=1" defer></script>
+<script src="guesssound.js?v=10" defer></script>
+</head>
+
+<body class="flex flex-col min-h-screen game-page" data-game="guesssound">
+
+<header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg overflow-hidden">
+        <img src="movieknowledge.ico" alt="MovieKnowledge Icon" class="w-full h-full object-cover">
+      </div>
+      <span class="text-xl font-serif font-bold">
+        Movie<span class="text-gradient-accent">Knowledge</span>
+      </span>
+    </a>
+    <nav class="flex items-center gap-6">
+      <a href="/letterboxd-game/" class="hover:text-white transition">Home</a>
+      <a href="/letterboxd-game/info" class="hover:text-white transition">Info</a>
+    </nav>
+  </div>
+</header>
+
+<section class="relative text-center py-20 md:py-28 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
+  <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <a class="game-back" href="/letterboxd-game/">← All games</a>
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
+      Movie Quote <span class="text-gradient-accent">Quiz</span>
+    </h1>
+    <p class="text-base sm:text-lg md:text-xl text-gray-400">
+      Hear a famous line and name the film. Each hint lowers the points you can earn.
+    </p>
+  </div>
+</section>
+
+<section class="container mx-auto px-4 py-10 flex-1">
+  <div class="text-center">
+    <div id="score">Score: 0</div>
+    <div id="highscore">High Score: 0</div>
+  </div>
+
+  <p id="load-message" class="frame-load" role="status">Finding a clip…</p>
+
+  <div class="frame-game" id="sound-game" hidden>
+    <div class="frame-meta">
+      <span id="sound-level">Listen first</span>
+      <span id="sound-points">Worth 3 points</span>
+    </div>
+
+    <div class="sound-card" id="sound-card">
+      <div class="sound-bar">
+        <button type="button" class="sound-play" id="playBtn" aria-label="Play the clip">
+          <svg class="icon-play" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
+          <svg class="icon-stop" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+        </button>
+        <div class="sound-track">
+          <input type="range" id="timeline" min="0" max="1000" value="0" disabled aria-label="Position in the clip">
+          <div class="sound-time"><span id="time-now">0:00</span><span id="time-total">0:00</span></div>
+        </div>
+        <div class="sound-volume">
+          <button type="button" id="muteBtn" aria-label="Mute">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9.5v5h3.6l4.4 3.6V5.9L7.6 9.5H4Z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.5 9a4 4 0 0 1 0 6M17.8 6.7a7.3 7.3 0 0 1 0 10.6"/><path class="cross" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m16 9.5 4.5 5m0-5-4.5 5"/></svg>
+          </button>
+          <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume">
+        </div>
+      </div>      <p class="sound-caption" id="sound-caption">Press play and listen closely. You can replay the clip as often as you like.</p>
+      <div class="sound-hints" id="sound-hints" hidden aria-live="polite">
+        <div class="sound-hint" id="sound-cast-hint" hidden>
+          <span class="sound-hint-index">01</span>
+          <div><span class="sound-hint-label">CAST</span><strong class="sound-hint-value" id="sound-cast"></strong></div>
+        </div>
+        <div class="sound-hint" id="sound-year-hint" hidden>
+          <span class="sound-hint-index">02</span>
+          <div><span class="sound-hint-label">RELEASE YEAR</span><strong class="sound-hint-value" id="sound-year"></strong></div>
+        </div>
+      </div>
+      <div class="sound-player" aria-hidden="true"><div id="yt-player"></div></div>
+    </div>
+
+    <div class="frame-search" id="guess-area">
+      <input type="text" id="movieSearch" placeholder="Search for a movie…" autocomplete="off" spellcheck="false"
+        role="combobox" aria-expanded="false" aria-controls="suggestions" aria-label="Search for a movie">
+      <div id="suggestions" role="listbox" hidden></div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6" id="guess-buttons">
+      <button id="guessBtn" class="bg-green-500 hover:bg-green-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Submit Guess</button>
+      <button id="moreMoviesBtn" class="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Reveal cast</button>
+      <button id="giveUpBtn" class="bg-red-500 hover:bg-red-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition w-full sm:w-auto">Reveal movie</button>
+    </div>
+
+    <div id="result" class="text-center text-lg font-semibold mb-6" role="status" aria-live="polite"></div>
+
+    <section class="sound-reveal" id="sound-reveal" aria-label="Clip answer" hidden>
+      <img id="sound-reveal-poster" class="sound-reveal-poster" alt="" loading="lazy">
+      <div class="sound-reveal-copy">
+        <p class="sound-reveal-label">THE FILM</p>
+        <h2 class="sound-reveal-title"><span id="sound-reveal-title"></span> <span id="sound-reveal-year"></span></h2>
+        <blockquote class="sound-reveal-quote" id="sound-reveal-line"></blockquote>
+        <p class="sound-reveal-speaker" id="sound-reveal-speaker"></p>
+      </div>
+    </section>
+
+    <div class="text-center">
+      <button id="playAgainBtn" hidden class="bg-orange-500 hover:bg-orange-600 text-black px-5 py-2 font-semibold rounded-lg transition">Next Clip</button>
+    </div>
+    <p class="sound-credit">Movie dialogue plays from its YouTube source, as sound only. <a id="sound-source" href="#" target="_blank" rel="noopener noreferrer" hidden>Watch this clip ↗</a></p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <p class="footer-love">Made with <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ffbd68"/></linearGradient></defs><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 5.01 10.44 6.36 10.97 5.01 12.64 4 14.38 4 16.88 4 18.88 6 18.88 8.5 18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z" fill="url(#footer-heart-gradient)"/></svg> for film lovers.</p>
+    <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
+  </div>
+</footer>
+</body>
+</html>

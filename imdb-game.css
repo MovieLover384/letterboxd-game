@@ -1,0 +1,31 @@
+.imdb-shell { text-align:center !important; }
+.imdb-scores { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+body.game-page .imdb-scores #score,body.game-page .imdb-scores #highscore { min-width:135px; margin:0; }
+.imdb-mode { display:inline-flex; gap:4px; padding:4px; border:1px solid #4a6889; border-radius:10px; background:#111e32; }
+.imdb-mode button { padding:8px 14px; border:0; border-radius:7px; background:transparent; color:#aec7dc; font-size:13px; font-weight:700; cursor:pointer; }
+.imdb-mode button[aria-pressed="true"] { background:#ff9148; color:#121a2a; }
+.imdb-mode button:focus-visible,.imdb-controls button:focus-visible,.imdb-next:focus-visible { outline:3px solid #8bd0ff; outline-offset:3px; }
+.imdb-instruction { margin:12px auto 25px; color:#a9c3d7; font-size:13px; }
+.imdb-arena { display:flex; align-items:stretch; justify-content:center; gap:18px; min-height:360px; }
+.imdb-film { flex:0 1 220px; max-width:220px; min-width:0; }
+.imdb-film h2 { flex:1; display:flex; align-items:center; justify-content:center; }
+.imdb-arena.is-sliding .imdb-film { transition:transform .7s ease,opacity .7s ease; }
+.imdb-film .imdb-poster { display:block; width:180px; height:270px; max-width:100%; border-radius:1rem; object-fit:cover; background:#0d1727; }
+.imdb-film .imdb-poster.is-loading { opacity:0; }
+.imdb-film h2 { max-width:100%; margin:11px 0 0; font-family:'Libre Baskerville',serif; font-size:19px; font-weight:700; line-height:1.35; overflow-wrap:anywhere; }
+.imdb-year { margin:3px 0 2px; color:#99adc1; font-size:12px; }
+.imdb-number { margin:4px 0 0; color:#ff9b51; font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+.imdb-meta { margin:3px 0 0; color:#9aacc0; font-size:12px; }
+.imdb-arena.is-sliding #leftFilm { transform:translateX(-120%); opacity:0; }
+.imdb-arena.is-sliding #rightFilm { transform:translateX(calc(-100% - 18px)); }
+.imdb-loading { padding:35px 0; color:#b9d2e7; }
+.imdb-controls { display:flex; justify-content:center; gap:24px; margin:24px 0 0; }
+.imdb-controls button,.imdb-next { min-width:116px; padding:11px 24px; border:1px solid #ffb273; border-radius:9px; background:#ff9148; color:#101725; font-size:17px; font-weight:700; cursor:pointer; }
+body.game-page .imdb-controls #higherBtn,body.game-page .imdb-controls #lowerBtn,body.game-page .imdb-next#nextBtn { border-color:#ffb273 !important; background:#ff9148 !important; color:#101725 !important; }
+.imdb-controls button:disabled { opacity:.5; cursor:default; }
+.imdb-result { min-height:28px; margin:20px auto 0; color:#dcf3e4; font-size:18px; font-weight:700; }
+.imdb-result.wrong { color:#ffbb9b; }
+.imdb-next { display:block; margin:12px auto 0; }
+.imdb-next[hidden],.imdb-arena[hidden],.imdb-controls[hidden] { display:none; }
+@media(max-width:520px) { .imdb-arena { gap:9px; min-height:315px; } .imdb-film { flex:1 1 0; } .imdb-film .imdb-poster { width:100%; height:auto; aspect-ratio:2/3; } .imdb-film h2 { font-size:15px; } .imdb-number { font-size:15px; } .imdb-controls { gap:12px; } .imdb-controls button { flex:0 1 125px; min-width:0; } }
+@media(prefers-reduced-motion:reduce) { .imdb-film { transition:none; } }

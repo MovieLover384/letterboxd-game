@@ -1,0 +1,23 @@
+.tag-load { padding:70px 0; color:#aec2d4; text-align:center; }
+.tag-game { width:min(100%,760px); margin:0 auto; }
+.tag-game[hidden],.tag-reveal[hidden],#nextBtnContainer[hidden] { display:none; }
+.tag-card { padding:34px 28px; border:1px solid #476687; border-radius:14px; background:radial-gradient(circle at 85% 0%,rgba(88,174,255,.14),transparent 45%),linear-gradient(150deg,#1b2a43,#111d32); text-align:center; }
+.tag-eyebrow { margin:0; color:#85c8fb; font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+.tag-card blockquote { margin:14px auto 0; max-width:600px; color:#f3f7fb; font-family:'Libre Baskerville',serif; font-size:clamp(20px,3.4vw,31px); font-style:italic; line-height:1.4; }
+.tag-card blockquote::before { content:"\201C"; }
+.tag-card blockquote::after { content:"\201D"; }
+.tag-options { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:22px 0; }
+.tag-option { display:flex; align-items:center; gap:12px; min-height:56px; padding:12px 16px; border:1px solid #4b6886; border-radius:10px; background:#15283f; color:#e8f0f6; font:600 15px Poppins,sans-serif; text-align:left; cursor:pointer; transition:border-color .18s,background .18s,transform .18s; }
+.tag-option:hover:not(:disabled) { border-color:#8acaff; background:#1d3a5a; transform:translateY(-2px); }
+.tag-option:focus-visible { outline:2px solid #88caff; outline-offset:2px; }
+.tag-option kbd { display:grid; place-items:center; flex:none; width:24px; height:24px; border:1px solid #5d83a9; border-radius:6px; color:#ffad72; font:700 12px Poppins,sans-serif; }
+.tag-option:disabled { opacity:1; cursor:default; }
+.tag-option.is-correct { border-color:#4fae80; background:#1d4a3a; color:#d1f8e2; }
+.tag-option.is-wrong { border-color:#c4655e; background:#4a2229; color:#ffc8c0; }
+.tag-reveal { display:flex; align-items:center; gap:16px; max-width:460px; margin:0 auto 22px; padding:14px 16px; border:1px solid #476687; border-radius:12px; background:#15283f; text-align:left; }
+.tag-reveal img { flex:none; width:64px; aspect-ratio:2/3; border-radius:6px; object-fit:cover; }
+.tag-reveal strong { display:block; font-size:17px; }
+.tag-reveal small { color:#a9bfd1; font-size:12px; }
+#nextBtnContainer { text-align:center; }
+@media(max-width:560px) { .tag-options { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .tag-option { transition:none; } }

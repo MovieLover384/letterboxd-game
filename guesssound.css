@@ -1,0 +1,68 @@
+.sound-card { display:flex; flex-direction:column; align-items:center; gap:18px; padding:34px 24px 30px; margin-bottom:26px; border:1px solid #476687; border-radius:14px; background:linear-gradient(160deg,#1c2f4b,#12213a); box-shadow:0 18px 40px rgba(0,0,0,.28); text-align:center; }
+.sound-play { display:grid; place-items:center; flex:none; width:68px; height:68px; border:2px solid #ffb36d; border-radius:50%; background:var(--film-orange); color:#11152a; box-shadow:0 10px 28px rgba(255,138,61,.28); transition:transform .18s,filter .18s; }
+.sound-play:hover { transform:scale(1.05); filter:brightness(1.08); }
+.sound-play:focus-visible { outline:3px solid #88caff; outline-offset:4px; }
+.sound-play .icon-stop,.sound-card.is-playing .sound-play .icon-play { display:none; }
+.sound-card.is-playing .sound-play .icon-stop { display:block; }
+.sound-bars { display:flex; align-items:center; justify-content:center; gap:5px; height:46px; }
+.sound-bars i { display:block; width:6px; height:10px; border-radius:3px; background:#4b6886; transition:background .2s; }
+.sound-card.is-playing .sound-bars i { background:#8acaff; animation:sound-bar .9s ease-in-out infinite; }
+.sound-bars i:nth-child(2n) { animation-delay:.12s; }
+.sound-bars i:nth-child(3n) { animation-delay:.27s; }
+.sound-bars i:nth-child(5n) { animation-delay:.41s; }
+@keyframes sound-bar { 0%,100% { height:10px; } 50% { height:42px; } }
+.sound-caption { max-width:460px; margin:0; color:#b5cde0; font-size:14px; line-height:1.6; }
+.sound-words { max-width:620px; margin:0; padding:14px 18px; border-left:3px solid var(--film-orange); border-radius:4px; background:rgba(255,138,61,.09); color:#fff2e6; font-family:'Libre Baskerville',Georgia,serif; font-size:clamp(17px,2.4vw,22px); font-style:italic; line-height:1.55; text-align:left; }
+.sound-words[hidden],.sound-hints[hidden],.sound-hint[hidden] { display:none; }
+.sound-hints { display:grid; gap:8px; width:min(100%,540px); text-align:left; }
+.sound-hint { display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:12px; padding:11px 15px; border:1px solid #3e5d7b; border-radius:9px; background:rgba(11,26,44,.6); }
+.sound-hint-index { color:#ffad73; font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; }
+#sound-year-hint .sound-hint-index { color:#82c9ff; }
+.sound-hint-label { display:block; margin-bottom:2px; color:#8faabe; font-size:10px; font-weight:700; letter-spacing:.12em; }
+.sound-hint-value { display:block; color:#f2f6fa; font-size:14px; font-weight:600; line-height:1.45; }
+.sound-credit { margin:10px 0 0; color:#7f97ad; font-size:11px; text-align:center; }
+.sound-credit a { color:#96cbf5; text-decoration:underline; }
+@media(prefers-reduced-motion:reduce) { .sound-card.is-playing .sound-bars i { animation:none; height:26px; } }
+.sound-skip { padding:0; border:0; background:none; color:#96cbf5; font-size:12px; text-decoration:underline; }
+.sound-skip:hover { color:#fff; }
+/* YouTube's player has to be on the page to play; it sits behind the card, clipped and see-through. */
+.sound-player { position:absolute; width:200px; height:200px; overflow:hidden; opacity:.01; pointer-events:none; z-index:-1; }
+.sound-card { position:relative; }
+.sound-time { display:flex; align-items:center; gap:12px; width:min(100%,460px); color:#a9c0d2; font-size:12px; font-variant-numeric:tabular-nums; }
+.sound-time span { min-width:34px; }
+.sound-time span:last-child { text-align:right; }
+.sound-time input { flex:1; }
+.sound-volume { display:flex; align-items:center; gap:10px; width:min(100%,220px); }
+.sound-volume button { display:grid; place-items:center; flex:none; width:34px; height:34px; border:1px solid #4b6886; border-radius:8px; background:#203650; color:#dce9f3; }
+.sound-volume button:hover { border-color:#8acaff; }
+.sound-volume button:focus-visible { outline:2px solid #88caff; outline-offset:2px; }
+.sound-volume button .cross { display:none; }
+.sound-volume button.is-muted .wave { display:none; }
+.sound-volume button.is-muted .cross { display:block; }
+.sound-volume input { flex:1; }
+.sound-card input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:linear-gradient(90deg,var(--film-orange) var(--fill,0%),#3a5572 var(--fill,0%)); cursor:pointer; }
+.sound-card input[type=range]:disabled { cursor:default; opacity:.6; }
+.sound-card input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid var(--film-orange); }
+.sound-card input[type=range]::-moz-range-thumb { width:12px; height:12px; border-radius:50%; background:#fff; border:2px solid var(--film-orange); }
+.sound-card input[type=range]:focus-visible { outline:2px solid #88caff; outline-offset:4px; }
+.sound-play[disabled] { opacity:.55; cursor:progress; transform:none; filter:none; }
+.sound-reveal { display:flex; align-items:center; gap:22px; max-width:690px; margin:0 auto 28px; padding:20px; border:1px solid #42617f; border-radius:14px; background:linear-gradient(135deg,#203a54,#14283f); text-align:left; }
+.sound-reveal[hidden] { display:none; }
+.sound-reveal-poster { flex:none; width:96px; height:144px; border-radius:7px; object-fit:cover; background:#0c1829; box-shadow:0 10px 24px rgba(0,0,0,.25); }
+.sound-reveal-copy { min-width:0; }
+.sound-reveal-label { margin:0 0 8px; color:#82c9ff; font-size:10px; font-weight:700; letter-spacing:.16em; }
+.sound-reveal-title { margin:0; color:#fff; font-size:clamp(20px,3vw,28px); font-weight:700; line-height:1.2; }
+.sound-reveal-title span:last-child { color:#a6bacd; font-size:.7em; font-weight:500; white-space:nowrap; }
+.sound-reveal-quote { margin:16px 0 5px; color:#fff1e3; font-family:'Libre Baskerville',Georgia,serif; font-size:clamp(16px,2.4vw,21px); font-style:italic; line-height:1.45; }
+.sound-reveal-speaker { margin:0; color:#acc2d5; font-size:13px; line-height:1.5; }
+@media(max-width:480px) { .sound-reveal { align-items:flex-start; gap:14px; padding:15px; } .sound-reveal-poster { width:72px; height:108px; } }
+/* Player bar: play button, timeline and volume in one row, like a media player. */
+.sound-card { align-items:stretch; padding:28px 28px 26px; }
+.sound-card > .sound-caption,.sound-card > .sound-hints { align-self:center; }
+.sound-bar { display:flex; align-items:center; gap:22px; padding:16px 20px; border:1px solid #3d5879; border-radius:14px; background:rgba(8,16,30,.4); }
+.sound-track { display:flex; flex:1; flex-direction:column; gap:9px; min-width:0; }
+.sound-track input { width:100%; }
+.sound-time { display:flex; justify-content:space-between; width:100%; color:#a9c0d2; font-size:12px; font-variant-numeric:tabular-nums; }
+.sound-bar .sound-volume { flex:none; width:150px; padding-left:20px; border-left:1px solid #3d5879; }
+@media(max-width:620px) { .sound-bar { flex-wrap:wrap; gap:16px; padding:14px; } .sound-track { flex-basis:calc(100% - 90px); } .sound-bar .sound-volume { width:100%; padding:12px 0 0; border-left:0; border-top:1px solid #3d5879; } }.sound-bar .sound-volume { box-sizing:border-box; }
+.sound-bar .sound-volume input { min-width:0; width:100%; }

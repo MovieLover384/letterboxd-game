@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watchlist Picker | MovieKnowledge</title>
+<link rel="icon" href="movieknowledge.ico" type="image/x-icon">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css?v=19">
+<link rel="stylesheet" href="watchlist-picker.css?v=5">
+<script src="site-experience.js?v=4" defer></script>
+<script src="watchlist-picker.js?v=4" defer></script>
+</head>
+<body class="flex flex-col min-h-screen game-page picker-page" data-game="watchlist-picker">
+<header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/letterboxd-game/" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg overflow-hidden">
+        <img src="movieknowledge.ico" alt="MovieKnowledge Icon" class="w-full h-full object-cover">
+      </div>
+      <span class="text-xl font-serif font-bold">Movie<span class="text-gradient-accent">Knowledge</span></span>
+    </a>
+    <nav class="flex items-center gap-6">
+      <a href="/letterboxd-game/" class="hover:text-white transition">Home</a>
+      <a href="/letterboxd-game/info" class="hover:text-white transition">Info</a>
+    </nav>
+  </div>
+</header>
+
+<section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 overflow-hidden picker-hero">
+  <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <a class="game-back" href="/letterboxd-game/#tools">← All tools</a>
+    <h1 class="text-5xl md:text-6xl font-bold mb-4">Watchlist <span class="text-gradient-accent">Picker</span></h1>
+    <p class="text-lg md:text-xl text-gray-400">Your next movie is already on your watchlist. Give it a spin and find out what it is.</p>
+  </div>
+</section>
+
+<main class="picker-shell">
+
+  <div class="picker-layout">
+    <section class="picker-panel" aria-labelledby="picker-settings-title">
+      <div class="picker-panel-heading">
+        <span class="picker-step">01</span>
+        <div>
+          <p class="picker-eyebrow">YOUR WATCHLIST</p>
+          <h2 id="picker-settings-title">Set up the spin</h2>
+        </div>
+      </div>
+      <form id="watchlist-form" novalidate>
+        <label for="letterboxd-username">Letterboxd username</label>
+        <div class="picker-input-row">
+          <span aria-hidden="true">letterboxd.com/</span>
+          <input id="letterboxd-username" name="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="40" placeholder="yourname" required>
+        </div>
+        <button id="load-button" class="picker-button picker-button-secondary" type="submit">Load watchlist</button>
+      </form>
+      <p id="load-message" class="picker-message" role="status" aria-live="polite">Only public watchlists can be loaded. No Letterboxd sign-in needed.</p>
+      <div id="watchlist-summary" class="watchlist-summary" hidden>
+        <strong id="watchlist-count">0 films ready</strong>
+        <a id="watchlist-link" href="https://letterboxd.com/" target="_blank" rel="noopener noreferrer">View watchlist ↗</a>
+      </div>
+
+      <fieldset class="runtime-fieldset">
+        <legend>Film length <small>Optional</small></legend>
+        <div class="runtime-options">
+          <label><input type="radio" name="runtime" value="any" checked><span>Any length</span></label>
+          <label><input type="radio" name="runtime" value="under-90"><span>Under 90 min</span></label>
+          <label><input type="radio" name="runtime" value="90-119"><span>90–119 min</span></label>
+          <label><input type="radio" name="runtime" value="120-plus"><span>120+ min</span></label>
+        </div>
+      </fieldset>
+      <p class="runtime-note">Length filters use each film's listed runtime. Films without one are skipped when a filter is selected.</p>
+    </section>
+
+    <section class="spin-panel" aria-labelledby="spin-title">
+      <div class="picker-panel-heading">
+        <span class="picker-step">02</span>
+        <div>
+          <p class="picker-eyebrow">LET FATE PICK</p>
+          <h2 id="spin-title">Your next movie</h2>
+        </div>
+      </div>
+      <div class="spin-stage" id="spin-stage">
+        <div id="spin-placeholder" class="spin-placeholder">
+          <span class="spin-placeholder-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"></path><path d="m6.2 5.3 3.1 3.9"></path><path d="m12.4 3.4 3.1 4"></path><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path></svg></span>
+          <p>Load your watchlist to start spinning.</p>
+        </div>
+        <div id="spin-reel" class="spin-reel" aria-live="off" hidden>
+          <span class="spin-reel-label">PICKING FROM YOUR WATCHLIST</span>
+          <div class="roulette-window" id="roulette-window" aria-hidden="true">
+            <div class="roulette-track" id="roulette-track"></div>
+            <span class="roulette-marker"></span>
+          </div>
+          <div class="reel-caption"><strong id="spin-reel-title"></strong><small id="spin-reel-note">Every film has a chance.</small></div>
+        </div>
+        <div id="spin-result" class="spin-result" role="status" aria-live="polite" hidden>
+          <div class="spin-poster"><img id="result-poster" alt="" hidden><span id="poster-fallback" aria-hidden="true">MK</span></div>
+          <div class="spin-result-copy">
+            <p class="picker-eyebrow">TONIGHT'S PICK</p>
+            <h3 id="result-title"></h3>
+            <p id="result-meta"></p>
+            <a id="result-link" href="https://letterboxd.com/" target="_blank" rel="noopener noreferrer">View on Letterboxd ↗</a>
+          </div>
+        </div>
+      </div>
+      <button id="spin-button" class="picker-button picker-button-primary" type="button" disabled>Spin watchlist <span aria-hidden="true">↗</span></button>
+      <p id="spin-message" class="picker-message" role="status" aria-live="polite">All films in your loaded watchlist are in the draw.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <p class="footer-love">Made for film lovers.</p>
+    <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
+  </div>
+</footer>
+</body>
+</html>

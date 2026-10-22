@@ -7,9 +7,11 @@
 <link rel="icon" href="movieknowledge.ico" type="image/x-icon">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="4fav.css">
+<link rel="stylesheet" href="4fav.css?v=5">
+<link rel="stylesheet" href="theme.css?v=11">
+<script src="site-experience.js?v=4" defer></script>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen game-page" data-game="4fav">
 
 <header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
   <div class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -30,228 +32,52 @@
 
 <section class="relative text-center py-24 md:py-32 bg-gradient-to-br from-gray-900 via-gray-800 to-green-900 overflow-hidden">
   <div class="relative z-10 max-w-3xl mx-auto px-4">
+    <a class="game-back" href="/letterboxd-game/">← All games</a>
     <h1 class="text-5xl md:text-6xl font-bold mb-4">Guess the <span class="text-gradient-accent">#1 Favorite Movie</span></h1>
-    <p class="text-lg md:text-xl text-gray-400">We show you 3 of someone's 4 favorite films. Can you guess which movie is their all-time #1?</p>
+    <p class="text-lg md:text-xl text-gray-400">Three favorites are on the screen. Pick the missing #1 from four films.</p>
   </div>
 </section>
 
-<section class="container mx-auto px-4 py-12 flex-1">
-  <div id="username" class="text-2xl md:text-3xl font-serif font-bold text-gradient-accent mb-2 text-center"></div>
-  <div id="yearHint" class="text-lg md:text-xl text-gray-400 mb-4 text-center"></div>
-
-  <div id="favorites" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-10 justify-center max-w-5xl mx-auto"></div>
-
-  <div class="max-w-md mx-auto mb-6 relative">
-    <input 
-      type="text" 
-      id="movieSearch" 
-      placeholder="Search for a movie..." 
-      class="w-full p-3 rounded-lg border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-      style="background-color: var(--film-surface);"
-    >
-    <div 
-      id="suggestions" 
-      class="absolute top-full left-0 right-0 rounded-b-lg mt-1 max-h-60 overflow-y-auto z-20 border border-gray-700"
-      style="background-color: var(--film-surface);"
-    ></div>
+<section class="container mx-auto px-4 py-12 flex-1 favorite-game">
+  <div class="favorite-round-heading">
+    <div>
+      <p class="favorite-round-label">THE TOP FOUR</p>
+      <h2 id="username">Loading a film fan...</h2>
+      <p>These are three of their favorites. Which film takes the top spot?</p>
+    </div>
+    <div class="favorite-round-stats" aria-label="Game stats">
+      <span class="favorite-round-count">ROUND 01</span>
+      <span>Score <strong id="favoriteScore">0</strong></span>
+      <span>High score <strong id="favoriteHighScore">0</strong></span>
+    </div>
   </div>
 
-  <div class="text-center mb-6">
-    <button id="guessBtn" class="bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 font-semibold rounded-lg text-lg transition">Submit Guess</button>
+  <div id="favorites" class="favorite-known-grid" aria-label="Known favorite movies"></div>
+
+  <div class="favorite-answer-heading">
+    <div>
+      <p class="favorite-round-label">YOUR PICK</p>
+      <h3>Choose the missing movie</h3>
+    </div>
+    <span>One answer is right</span>
   </div>
-
-  <div id="result" class="text-center text-lg font-semibold mb-6"></div>
-
-  <div id="correctMovie" class="hidden flex flex-col items-center gap-4 mb-6"></div>
-
-  <div class="flex justify-center gap-4">
-    <button id="giveUpBtn" class="bg-green-500 hover:bg-green-600 text-black px-5 py-2 font-semibold rounded-lg transition">Give Up</button>
-    <button id="playAgainBtn" class="bg-orange-500 hover:bg-orange-600 text-black px-5 py-2 font-semibold rounded-lg transition">Play Again</button>
+  <div id="choices" class="favorite-choice-grid" role="group" aria-label="Four movie choices"></div>
+  <div id="result" class="favorite-result" role="status" aria-live="polite"></div>
+  <div class="favorite-round-actions">
+    <button id="giveUpBtn" type="button" class="favorite-skip">Reveal answer</button>
+    <button id="playAgainBtn" type="button" class="button button-primary favorite-next" hidden>Next round <span aria-hidden="true">→</span></button>
   </div>
 </section>
 
-<footer class="bg-film-surface border-t border-gray-800 py-12 text-center mt-auto">
-  <h3 class="text-orange-500 mb-2">
-    MovieKnowledge ~ Fan project, Not affiliated with Letterboxd
-  </h3>
-  <p class="text-gray-400 mb-1 flex items-center justify-center gap-2">
-    Made with
-    <svg width="18" height="18" viewBox="0 0 24 24" class="inline-block">
-      <defs>
-        <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="hsl(25,95%,55%)"/>
-          <stop offset="100%" stop-color="hsl(35,90%,60%)"/>
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
-           2 6 4 4 6.5 4 
-           8.24 4 9.91 5.01 10.44 6.36 
-           10.97 5.01 12.64 4 14.38 4 
-           16.88 4 18.88 6 18.88 8.5 
-           18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z"
-        fill="url(#heartGradient)"
-      />
-    </svg>
-    for film lovers
-  </p>
-  <p class="text-gray-400">
-    Follow me on 
-    <a href="https://letterboxd.com/MovieLover384/" target="_blank" class="text-orange-500 hover:text-orange-400 underline">
-      Letterboxd
-    </a>
-  </p>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="site-footer-brand" href="/letterboxd-game/"><img src="movieknowledge.ico" alt="" width="26" height="26"><span>Movie<strong>Knowledge</strong></span></a>
+    <p class="footer-love">Made with <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><defs><linearGradient id="footer-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ffbd68"/></linearGradient></defs><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 5.01 10.44 6.36 10.97 5.01 12.64 4 14.38 4 16.88 4 18.88 6 18.88 8.5 18.88 12.28 15.48 15.36 10.33 20.04L12 21.35z" fill="url(#footer-heart-gradient)"/></svg> for film lovers.</p>
+    <div class="site-footer-meta"><a href="https://letterboxd.com/Zisser/" target="_blank" rel="noopener noreferrer">Created by Zisser ↗</a><span>Fan project · Not affiliated with Letterboxd</span></div>
+  </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script>
-let users = [];
-let currentUser = null;
-let previousUser = null;
-let correctAnswer = "";
-let allMoviesList = [];
-
-async function loadUsers() {
-    const res = await fetch("4fav.json");
-    users = await res.json();
-    buildAllMoviesList();
-    startNewGame();
-}
-
-function buildAllMoviesList() {
-    const movieSet = new Set();
-    users.forEach(user => {
-        user.favorites.forEach(movie => {
-            movieSet.add(movie.title); // keep full title with year for display
-        });
-    });
-    allMoviesList = Array.from(movieSet);
-}
-
-function startNewGame() {
-    do {
-        currentUser = users[Math.floor(Math.random() * users.length)];
-    } while (currentUser === previousUser && users.length > 1);
-    previousUser = currentUser;
-
-    correctAnswer = currentUser.favorites[0].title;
-
-    document.getElementById("username").innerHTML = `User: ${currentUser.username}`;
-    document.getElementById("movieSearch").value = "";
-    document.getElementById("suggestions").innerHTML = "";
-    document.getElementById("result").innerHTML = "";
-    const correctMovieDiv = document.getElementById("correctMovie");
-    correctMovieDiv.innerHTML = "";
-    correctMovieDiv.classList.add("hidden");
-    document.getElementById("yearHint").innerHTML = `Hint: Released in ${currentUser.favorites[0].title.match(/\((\d{4})\)/)[1]}`;
-
-    displayFavorites();
-}
-
-function displayFavorites() {
-    const container = document.getElementById("favorites");
-    container.innerHTML = "";
-    const favorites = currentUser.favorites.slice(1);
-
-    favorites.forEach((movie, i) => {
-        const div = document.createElement("div");
-        div.className = "card p-3 favorite-poster flex flex-col items-center"; 
-        div.style.animationDelay = `${i * 0.01}s`; 
-        div.innerHTML = `
-            <img src="${movie.poster_url}" alt="${movie.title}" class="rounded-lg mb-2 max-w-full h-auto">
-            <p class="font-semibold text-white text-center">${movie.title}</p>
-        `;
-        container.appendChild(div);
-    });
-
-    if (window.innerWidth <= 640) {
-        const placeholderDiv = document.createElement("div");
-        placeholderDiv.className = "card p-3 favorite-poster flex flex-col items-center";
-        placeholderDiv.id = "placeholderPoster";
-        placeholderDiv.innerHTML = `
-            <img src="Emptyposter.png" alt="Missing Poster" class="rounded-lg mb-2 max-w-full h-auto">
-            <p class="font-semibold text-gray-500 text-center">#1 Favorite</p>
-        `;
-        container.appendChild(placeholderDiv);
-    }
-}
-
-const searchInput = document.getElementById("movieSearch");
-const suggestionsBox = document.getElementById("suggestions");
-
-searchInput.addEventListener("input", () => {
-    const query = searchInput.value.trim().toLowerCase();
-    suggestionsBox.innerHTML = "";
-    if (query.length < 1) return;
-    if (/^\d+$/.test(query)) return; // ignore numeric-only queries
-    const filtered = allMoviesList.filter(title => title.toLowerCase().includes(query));
-    filtered.slice(0,5).forEach(title => {
-        const div = document.createElement("div");
-        div.className = "p-3 cursor-pointer hover:bg-orange-600 hover:text-black rounded";
-        div.textContent = title; // full title with year
-        div.onclick = () => {
-            searchInput.value = title;
-            suggestionsBox.innerHTML = "";
-        };
-        suggestionsBox.appendChild(div);
-    });
-});
-
-function revealCorrectMovie(showConfetti = true) {
-    const correctMovieDiv = document.getElementById("correctMovie");
-    const movie = currentUser.favorites[0];
-    const placeholder = document.getElementById("placeholderPoster");
-    if (placeholder) {
-        placeholder.innerHTML = `
-            <img src="${movie.poster_url}" alt="${movie.title}" class="rounded-lg mb-2 max-w-full h-auto">
-            <p class="font-semibold text-white text-center">${movie.title}</p>
-        `;
-    }
-    correctMovieDiv.innerHTML = `
-        <h3 class="text-2xl font-bold text-gradient-accent">#1 Favorite Movie:</h3>
-        <div class="card p-3 w-64">
-            <img src="${movie.poster_url}" alt="${movie.title}" class="w-full rounded-lg mb-2">
-            <p class="font-semibold text-white text-center">${movie.title}</p>
-        </div>
-    `;
-    correctMovieDiv.classList.remove("hidden");
-    if (showConfetti) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-    }
-}
-
-document.getElementById("guessBtn").addEventListener("click", () => {
-    const guess = searchInput.value.trim().toLowerCase();
-    const correct = correctAnswer.toLowerCase();
-    const result = document.getElementById("result");
-    if (!guess) {
-        result.innerHTML = "You need to enter a movie before submitting";
-        result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-        return;
-    }
-    if (guess === correct || correct.includes(guess)) {
-        result.innerHTML = "Correct!";
-        result.className = "text-green-400 text-lg font-semibold mb-4 text-center";
-        revealCorrectMovie();
-    } else {
-        result.innerHTML = "Wrong! Try again.";
-        result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-    }
-});
-
-document.getElementById("giveUpBtn").addEventListener("click", () => {
-    const result = document.getElementById("result");
-    result.innerHTML = "You gave up";
-    result.className = "text-red-500 text-lg font-semibold mb-4 text-center";
-    revealCorrectMovie(false);
-});
-
-document.getElementById("playAgainBtn").addEventListener("click", () => {
-    startNewGame();
-});
-
-loadUsers();
-</script>
+<script src="4fav.js?v=5" defer></script>
 
 </body>
 </html>

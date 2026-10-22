@@ -1,0 +1,38 @@
+.knowledge-shell { text-align:center; }
+.knowledge-stats { display:flex; justify-content:center; flex-wrap:wrap; gap:9px; margin-bottom:27px; }
+.knowledge-stats span { display:inline-flex; align-items:center; gap:9px; padding:8px 14px; border:1px solid #48698b; border-radius:9px; background:#142941; color:#afc8dd; font-size:12px; font-weight:600; }
+.knowledge-stats strong { color:#fff; font-size:15px; font-variant-numeric:tabular-nums; }
+.knowledge-stats span:last-child strong { color:#ffae77; }
+body.game-page .knowledge-stats #score { display:inline; min-width:0; margin:0; padding:0; border:0; border-radius:0; background:none; color:#fff; font-size:15px; }
+.knowledge-loading { padding:35px; color:#bcd0e1; }
+.knowledge-eyebrow { margin:0 0 7px; color:#ffad72; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+#knowledge-prompt { max-width:720px; margin:0 auto 7px; font-family:'Poppins',sans-serif; font-size:clamp(22px,3vw,30px); font-weight:700; line-height:1.2; }
+#knowledge-help { margin:0 auto 22px; color:#a9c1d6; font-size:13px; }
+.knowledge-films { display:flex; justify-content:center; align-items:stretch; flex-wrap:wrap; gap:14px; max-width:840px; margin:0 auto 22px; }
+.knowledge-film { position:relative; display:flex; flex:0 1 178px; flex-direction:column; align-items:center; gap:7px; min-width:0; padding:10px; border:1px solid #496887; border-radius:13px; background:#152840; color:#f5f5f2; text-align:center; }
+.knowledge-film img { display:block; width:100%; aspect-ratio:2/3; border-radius:7px; background:#0b1525; object-fit:cover; }
+.knowledge-film strong { display:flex; flex:1; align-items:center; justify-content:center; font-size:13px; line-height:1.3; }
+.knowledge-film small { color:#a9c2d8; font-size:11px; }
+.knowledge-film button { font:inherit; }
+.knowledge-film.selectable { cursor:pointer; transition:transform .18s,border-color .18s,background .18s; }
+.knowledge-film.selectable:hover { transform:translateY(-3px); border-color:#ffad75; }
+.knowledge-film.selectable:focus-visible,.knowledge-options button:focus-visible,.knowledge-main-button:focus-visible { outline:3px solid #8bd0ff; outline-offset:3px; }
+.knowledge-film.selected { border-color:#ffad75; background:#304463; }
+.knowledge-film .order-badge { position:absolute; top:15px; left:15px; display:grid; place-items:center; width:29px; height:29px; border-radius:50%; background:#ff9148; color:#10182a; font-size:14px; font-weight:800; }
+.knowledge-film .order-badge[hidden] { display:none; }
+body[data-knowledge-mode="timeline"] .knowledge-film { flex:1 1 calc((100% - 42px)/4); max-width:190px; }
+.knowledge-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-width:620px; margin:0 auto; }
+.knowledge-options button { min-height:51px; padding:11px 13px; border:1px solid #6284a7; border-radius:9px; background:#203c5b; color:#eff7fb; font-size:14px; font-weight:700; cursor:pointer; }
+.knowledge-options button:hover:not(:disabled) { border-color:#ffb06d; background:#34577c; }
+.knowledge-options button:disabled { cursor:default; }
+.knowledge-options button.correct { border-color:#77d8a9; background:#1c5a47; color:#fff; }
+.knowledge-options button.incorrect { border-color:#ff8e7a; background:#653c42; color:#fff; }
+.knowledge-main-button { margin:18px auto 0; padding:11px 21px; border:1px solid #ffb071; border-radius:9px; background:#ff9148; color:#111a2a; font-weight:700; cursor:pointer; }
+.knowledge-main-button:disabled { opacity:.45; cursor:default; }
+.knowledge-main-button[hidden],#knowledge-stage[hidden] { display:none; }
+.knowledge-feedback { min-height:28px; max-width:700px; margin:18px auto 0; color:#b9edcd; font-size:14px; font-weight:600; line-height:1.5; }
+.knowledge-feedback.wrong { color:#ffb4a1; }
+.knowledge-feedback .correct-order { display:block; margin-top:7px; color:#d5e6f3; font-weight:500; }
+@media(max-width:640px) { .knowledge-film { flex-basis:calc(50% - 8px); } body[data-knowledge-mode="timeline"] .knowledge-film { flex:1 1 calc(50% - 8px); max-width:none; } .knowledge-options { gap:8px; } .knowledge-options button { font-size:12px; } }
+@media(max-width:420px) { .knowledge-film { padding:7px; } .knowledge-film strong { font-size:12px; } }
+@media(prefers-reduced-motion:reduce) { .knowledge-film.selectable { transition:none; } }
