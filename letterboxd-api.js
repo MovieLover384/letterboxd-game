@@ -1,6 +1,6 @@
 // The public GitHub Pages site needs a separate server for live game requests.
 // Set this to the deployed backend origin; localhost keeps using the local Node server.
-const LETTERBOXD_API_ORIGIN = '';
+const LETTERBOXD_API_ORIGIN = 'https://movieknowledge-letterboxd-api.onrender.com';
 
 export function apiUrl(path) {
   const publicPages = window.location.hostname === 'movielover384.github.io';

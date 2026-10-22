@@ -1,4 +1,4 @@
-import { apiRequest as api } from './letterboxd-api.js?v=2';
+import { apiRequest as api } from './letterboxd-api.js?v=3';
 
 const form = document.getElementById('keepcut-form');
 const usernameInput = document.getElementById('letterboxd-username');

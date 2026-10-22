@@ -1,5 +1,5 @@
 import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=26';
-import { apiUrl } from './letterboxd-api.js?v=2';
+import { apiUrl } from './letterboxd-api.js?v=3';
 
 const $ = (id) => document.getElementById(id);
 const date = utcDay();
