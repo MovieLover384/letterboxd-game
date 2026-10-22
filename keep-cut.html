@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css?v=19">
 <link rel="stylesheet" href="watchlist-picker.css?v=5">
-<link rel="stylesheet" href="keep-cut.css?v=1">
+<link rel="stylesheet" href="keep-cut.css?v=2">
 <script src="site-experience.js?v=4" defer></script>
-<script type="module" src="keep-cut.js?v=4"></script>
+<script type="module" src="keep-cut.js?v=5"></script>
 </head>
 <body class="flex flex-col min-h-screen game-page picker-page keepcut-page" data-game="keep-cut">
 <header class="bg-film-surface/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
@@ -66,6 +66,12 @@
         <button id="start-button" class="picker-button picker-button-primary" type="submit">Deal my films <span aria-hidden="true">↗</span></button>
       </form>
       <p id="start-message" class="picker-message" role="status" aria-live="polite">Only public ratings can be used. No Letterboxd sign-in needed. You need at least 8 films in the range you pick.</p>
+      <div class="keepcut-import">
+        <p>Username lookup unavailable? Use <strong>ratings.csv</strong> from your <a href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Letterboxd data export</a>.</p>
+        <label for="ratings-file">Choose ratings.csv</label>
+        <input id="ratings-file" type="file" accept=".csv,text/csv">
+        <small>The file stays in your browser.</small>
+      </div>
       <div id="pool-summary" class="watchlist-summary" hidden>
         <strong id="pool-count">0 films in the draw</strong>
         <a id="pool-link" href="https://letterboxd.com/" target="_blank" rel="noopener noreferrer">View ratings ↗</a>

@@ -1,4 +1,4 @@
-import { apiRequest as api } from './letterboxd-api.js?v=3';
+import { apiRequest as api } from './letterboxd-api.js?v=4';
 
 const form = document.getElementById('watchlist-form');
 const usernameInput = document.getElementById('letterboxd-username');
@@ -95,7 +95,7 @@ form.addEventListener('submit', async (event) => {
   message(loadMessage, 'Loading every page of your public watchlist…');
   resetResult();
   try {
-    const data = await api(`api/watchlist?username=${encodeURIComponent(username)}`);
+    const data = await api(`api/watchlist?username=${encodeURIComponent(username)}`, { timeoutMs: 60000 });
     loadedUsername = username.toLowerCase();
     movies = data.movies;
     preparePreview();
@@ -221,6 +221,7 @@ spinButton.addEventListener('click', async () => {
   message(spinMessage, runtime === 'any' ? 'Preparing your watchlist…' : 'Checking film lengths…');
   try {
     const data = await api('api/watchlist/spin', {
+      timeoutMs: 60000,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: loadedUsername, runtime }),

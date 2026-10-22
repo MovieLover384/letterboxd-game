@@ -242,22 +242,18 @@ function showCorrection(question, original, item) {
 }
 
 async function verifyOnline(questionId, answer) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt) await new Promise((resolve) => setTimeout(resolve, 700));
-    try {
-      const response = await fetch(apiUrl('api/verify'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId, answer }),
-        signal: AbortSignal.timeout(30000),
-      });
-      const result = await response.json();
-      if (response.ok) return result;
-      if (result.status !== 'unavailable') throw new Error(`Verifier returned ${response.status}`);
-    } catch (error) {
-      console.warn('Live answer check unavailable:', error);
-    }
+  try {
+    const response = await fetch(apiUrl('api/verify'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId, answer }),
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!response.ok) throw new Error(`Verifier returned ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.warn('Live answer check unavailable:', error);
+    return { status: 'unavailable' };
   }
-  return { status: 'unavailable' };
 }
 
 function updateTimer() {
@@ -579,10 +575,14 @@ $('answer-form').addEventListener('submit', async (event) => {
   $('skip-button').disabled = true;
   $('answer-feedback').textContent = ['character','role'].includes(question.kind) ? 'Checking this character…' :
     ['cast','collab'].includes(question.kind) ? 'Checking this actor…' : 'Checking this movie…';
+  const slowNotice = setTimeout(() => {
+    $('answer-feedback').textContent = 'Still checking. The movie service may be waking up…';
+  }, 5000);
   let checked;
   try {
     checked = await verifyOnline(question.id, typed);
   } finally {
+    clearTimeout(slowNotice);
     if (deadline) deadline += Date.now() - startedChecking;
     saveProgress();
     checkingAnswer = false;
@@ -642,7 +642,9 @@ let catalog = null;
 // the catalog changes during the day. Without the server, the same prompts are worked out locally.
 async function loadDailyQuestions() {
   try {
-    const response = await fetch(apiUrl(`api/daily?date=${date}`), { cache: 'no-store' });
+    const response = await fetch(apiUrl(`api/daily?date=${date}`), {
+      cache: 'no-store', signal: AbortSignal.timeout(4000),
+    });
     if (response.ok) {
       const { ids } = await response.json();
       const byId = new Map(catalog.questions.map((question) => [question.id, question]));
@@ -651,6 +653,18 @@ async function loadDailyQuestions() {
     }
   } catch (error) { console.warn('Shared daily prompts unavailable:', error); }
   return dailyQuestions(catalog, date);
+}
+
+async function loadSharedAnswers() {
+  try {
+    const response = await fetch(apiUrl('api/learned'), {
+      cache: 'no-store', signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return;
+    const { answers } = await response.json();
+    if (Array.isArray(answers)) answers.forEach(({ questionId, item }) =>
+      addLearnedAnswer(questionId, item));
+  } catch (error) { console.warn('Shared answers unavailable:', error); }
 }
 
 async function start() {
@@ -684,13 +698,13 @@ async function start() {
     if (!response.ok) throw new Error(`Catalog returned ${response.status}`);
     catalog = await response.json();
     try {
-      const learnedResponse = await fetch(apiUrl('api/learned'), { cache: 'no-store' });
-      if (learnedResponse.ok) {
-        const { answers: learned } = await learnedResponse.json();
-        if (Array.isArray(learned)) learned.forEach(({ questionId, item }) =>
+      const seedResponse = await fetch('backend/seed-learned-answers.json?v=1');
+      if (seedResponse.ok) {
+        const seed = await seedResponse.json();
+        if (Array.isArray(seed)) seed.forEach(({ questionId, item }) =>
           addLearnedAnswer(questionId, item));
       }
-    } catch (error) { console.warn('Shared answers unavailable:', error); }
+    } catch (error) { console.warn('Seed answers unavailable:', error); }
     if (isUnlimited) {
       try { unlimitedHistory = JSON.parse(localStorage.getItem(unlimitedHistoryKey) || '[]'); }
       catch { unlimitedHistory = []; }
@@ -701,6 +715,7 @@ async function start() {
     loadBestScores();
     $('loading-view').hidden = true;
     render();
+    void loadSharedAnswers();
     setInterval(() => {
       if (!isUnlimited && utcDay() !== date) { location.reload(); return; }
       updateTimer();

@@ -1,7 +1,9 @@
-import { apiRequest as api } from './letterboxd-api.js?v=3';
+import { apiRequest as api } from './letterboxd-api.js?v=4';
+import { parseRatingsCsv } from './ratings-csv.mjs?v=1';
 
 const form = document.getElementById('keepcut-form');
 const usernameInput = document.getElementById('letterboxd-username');
+const ratingsFile = document.getElementById('ratings-file');
 const startButton = document.getElementById('start-button');
 const startMessage = document.getElementById('start-message');
 const poolSummary = document.getElementById('pool-summary');
@@ -37,6 +39,8 @@ let rating = '5';
 let films = [];
 let choices = [];
 let verdict = { kept: [], cut: [] };
+let csvText = null;
+let deckSource = 'username';
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function message(element, text, error = false) {
@@ -192,32 +196,63 @@ function preload(items) {
   })));
 }
 
-async function deal() {
+async function addCsvPosters(movies) {
+  try {
+    const response = await fetch('movie-pool.json?v=1', { signal: AbortSignal.timeout(6000) });
+    if (!response.ok) return movies;
+    const pool = await response.json();
+    const key = (movie) => `${movie.title.normalize('NFKD').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')}:${movie.year}`;
+    const posters = new Map(pool.filter((movie) => movie.poster?.startsWith('/')).map((movie) =>
+      [key(movie), `https://image.tmdb.org/t/p/w342${movie.poster}`]));
+    return movies.map((movie) => ({ ...movie, poster: posters.get(key(movie)) || null }));
+  } catch { return movies; }
+}
+
+async function showDeal(data, source) {
+  await preload(data.movies);
+  films = data.movies;
+  choices = [];
+  deckSource = source;
+  poolCount.textContent = `${data.count.toLocaleString()} ${data.count === 1 ? 'film' : 'films'} in the draw`;
+  poolLink.href = source === 'csv' ? 'https://letterboxd.com/user/exportdata/' :
+    `https://letterboxd.com/${encodeURIComponent(username)}/films/rated/${rating}/by/date/`;
+  poolLink.textContent = source === 'csv' ? 'Export your data ↗' : 'View ratings ↗';
+  poolSummary.hidden = false;
+  placeholder.hidden = true;
+  board.hidden = false;
+  result.hidden = true;
+  play.hidden = false;
+  renderBoard([], []);
+  showFilm();
+  gamePanel.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  message(startMessage, source === 'csv' ? `Picked from ${data.count.toLocaleString()} films in your ratings.csv.` :
+    `Picked from ${data.count.toLocaleString()} films for @${username}.`);
+  message(gameMessage, 'Use the ← and → keys on a keyboard, or tap the buttons.');
+}
+
+async function deal(source = 'username') {
   if (busy) return;
   busy = true;
   rating = document.querySelector('input[name="rating"]:checked').value;
   startButton.disabled = true;
   againButton.disabled = true;
   usernameInput.disabled = true;
+  ratingsFile.disabled = true;
   startButton.firstChild.textContent = 'Dealing… ';
   message(startMessage, 'Reading your ratings and picking eight films…');
   try {
-    const data = await api(`api/keepcut?username=${encodeURIComponent(username)}&min=${rating}`);
-    await preload(data.movies);
-    films = data.movies;
-    choices = [];
-    poolCount.textContent = `${data.count.toLocaleString()} ${data.count === 1 ? 'film' : 'films'} in the draw`;
-    poolLink.href = `https://letterboxd.com/${encodeURIComponent(username)}/films/rated/${rating}/by/date/`;
-    poolSummary.hidden = false;
-    placeholder.hidden = true;
-    board.hidden = false;
-    result.hidden = true;
-    play.hidden = false;
-    renderBoard([], []);
-    showFilm();
-    gamePanel.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    message(startMessage, `Picked from ${data.count.toLocaleString()} films for @${username}.`);
-    message(gameMessage, 'Use the ← and → keys on a keyboard, or tap the buttons.');
+    let data;
+    if (source === 'csv') {
+      if (!csvText) {
+        const file = ratingsFile.files?.[0];
+        if (!file || file.size > 20_000_000) throw new Error('Choose a ratings.csv file under 20 MB.');
+        csvText = await file.text();
+      }
+      const pool = parseRatingsCsv(csvText, rating);
+      if (pool.length < 8) throw new Error(`Only ${pool.length} films meet that rating. Choose a lower rating.`);
+      data = { count: pool.length, movies: await addCsvPosters(shuffle(pool).slice(0, 8)) };
+    } else data = await api(`api/keepcut?username=${encodeURIComponent(username)}&min=${rating}`);
+    await showDeal(data, source);
   } catch (error) {
     message(startMessage, error.message, true);
   } finally {
@@ -225,6 +260,7 @@ async function deal() {
     startButton.disabled = false;
     againButton.disabled = false;
     usernameInput.disabled = false;
+    ratingsFile.disabled = false;
     startButton.firstChild.textContent = 'Deal my films ';
   }
 }
@@ -238,14 +274,16 @@ form.addEventListener('submit', (event) => {
     return;
   }
   username = value;
-  deal();
+  deal('username');
 });
 
-againButton.addEventListener('click', deal);
+ratingsFile.addEventListener('change', () => { csvText = null; deal('csv'); });
+againButton.addEventListener('click', () => deal(deckSource));
 
 copyButton.addEventListener('click', async () => {
   const names = (list) => list.map((film) => film.year ? `${film.title} (${film.year})` : film.title).join(', ');
-  const text = `Keep 4, Cut 4 (@${username})\nKept: ${names(verdict.kept)}\nCut: ${names(verdict.cut)}`;
+  const label = deckSource === 'csv' ? 'my ratings' : `@${username}`;
+  const text = `Keep 4, Cut 4 (${label})\nKept: ${names(verdict.kept)}\nCut: ${names(verdict.cut)}`;
   try {
     await navigator.clipboard.writeText(text);
     message(gameMessage, 'Result copied to your clipboard.');

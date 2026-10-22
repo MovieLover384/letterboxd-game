@@ -2,6 +2,12 @@ body.keepcut-page { --game-poster:url('posters/parasite.jpg'); }
 .keepcut-page .picker-layout { grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr); }
 .keepcut-page .picker-button-primary { margin-top:24px; }
 .keepcut-page .spin-panel { scroll-margin-top:84px; }
+.keepcut-import { margin-top:22px; padding:15px; border:1px solid #456181; border-radius:10px; background:#13243a; color:#b9ccdc; font-size:12px; line-height:1.6; }
+.keepcut-import p { margin:0 0 10px; }
+.keepcut-import a { color:#89c7ff; }
+.keepcut-import label { display:block; margin-bottom:6px; color:#f3f6f8; font-weight:700; }
+.keepcut-import input { display:block; max-width:100%; color:#d3e3ed; font:inherit; }
+.keepcut-import small { display:block; margin-top:6px; color:#91aabd; }
 .rating-options { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .keepcut-stage { align-content:center; min-height:480px; }
 .keepcut-board { display:grid; gap:14px; width:100%; }

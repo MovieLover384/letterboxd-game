@@ -12,9 +12,10 @@ export function apiUrl(path) {
 
 export async function apiRequest(path, options) {
   const url = apiUrl(path);
+  const { timeoutMs = 15000, ...requestOptions } = options || {};
   let response;
   try {
-    response = await fetch(url, { ...options, signal: AbortSignal.timeout(90_000) });
+    response = await fetch(url, { ...requestOptions, signal: AbortSignal.timeout(timeoutMs) });
   } catch {
     throw new Error('Could not reach the movie service. Please try again in a moment.');
   }
