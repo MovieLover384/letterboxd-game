@@ -11,6 +11,15 @@ export function apiUrl(path) {
   return new URL(`/${path}`, origin);
 }
 
+// The free host puts the service to sleep when idle and takes up to a minute to wake it. Pinging it
+// as soon as a page opens means it is usually awake by the time a player submits an answer.
+let warmedUp = false;
+export function warmUpApi() {
+  if (warmedUp || !PUBLIC_HOSTS.includes(window.location.hostname)) return;
+  warmedUp = true;
+  fetch(apiUrl('health'), { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+}
+
 export async function apiRequest(path, options) {
   const url = apiUrl(path);
   const { timeoutMs = 15000, ...requestOptions } = options || {};

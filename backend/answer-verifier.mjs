@@ -97,8 +97,20 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   const inFlight = new Map();
   let writeQueue = Promise.resolve();
 
+  // Film data barely changes, so repeated lookups (a film checked and then rated, or the same film
+  // answered by several players) are served from memory for an hour.
+  const tmdbCache = new Map();
   async function tmdb(route, params = {}) {
     if (!tmdbKey) throw new Error('TMDB_API_KEY is not configured');
+    const cacheKey = `${route}?${JSON.stringify(params)}`;
+    const hit = tmdbCache.get(cacheKey);
+    if (hit && Date.now() - hit.time < 3600000) return hit.value;
+    const value = await tmdbFetch(route, params);
+    if (tmdbCache.size > 1000) tmdbCache.delete(tmdbCache.keys().next().value);
+    tmdbCache.set(cacheKey, { time: Date.now(), value });
+    return value;
+  }
+  async function tmdbFetch(route, params) {
     const url = new URL(`https://api.themoviedb.org/3${route}`);
     url.search = new URLSearchParams({ api_key: tmdbKey, language: 'en-US', ...params });
     // Dropped connections and rate limits are usually brief, so retry before failing.
@@ -200,29 +212,30 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
 
   // TMDB's one-line synopsis rarely mentions individual scenes, so the check also
   // reads the film's Wikipedia plot summary.
+  // The lookup starts as soon as a film is known, so it runs while TMDB details load. The three
+  // possible article titles are tried at once; the first one in this order that has a plot wins.
   const plots = new Map();
-  async function plotFor(movie) {
+  function plotFor(movie) {
     if (plots.has(movie.id)) return plots.get(movie.id);
-    let plot = '';
-    for (const title of [`${movie.title} (${movie.year} film)`, `${movie.title} (film)`, movie.title]) {
+    const titles = [`${movie.title} (${movie.year} film)`, `${movie.title} (film)`, movie.title];
+    const pending = Promise.all(titles.map(async (title) => {
       try {
         const url = new URL('https://en.wikipedia.org/w/api.php');
         url.search = new URLSearchParams({ action: 'query', prop: 'extracts', explaintext: '1',
           exsectionformat: 'wiki', redirects: '1', format: 'json', titles: title });
         const response = await fetchImpl(url, { signal: AbortSignal.timeout(6000),
           headers: { 'User-Agent': 'MovieKnowledge/1.0 (fan trivia game)', Accept: 'application/json' } });
-        if (!response.ok) continue;
+        if (!response.ok) return '';
         const page = Object.values((await response.json()).query?.pages || {})[0];
         const text = page?.extract || '';
-        if (!text || !text.slice(0, 800).includes(String(movie.year))) continue;
+        if (!text || !text.slice(0, 800).includes(String(movie.year))) return '';
         const section = text.match(/==\s*(?:Plot|Plot summary|Synopsis|Premise|Story)\s*==\s*([\s\S]*?)(?=\n==[^=]|$)/i);
-        plot = (section ? section[1] : text).replace(/\s+/g, ' ').trim().slice(0, 6000);
-        if (plot) break;
-      } catch { /* The check can still use the film's TMDB details. */ }
-    }
+        return (section ? section[1] : text).replace(/\s+/g, ' ').trim().slice(0, 6000);
+      } catch { return ''; /* The check can still use the film's TMDB details. */ }
+    })).then((found) => found.find(Boolean) || '');
     if (plots.size > 500) plots.delete(plots.keys().next().value);
-    plots.set(movie.id, plot);
-    return plot;
+    plots.set(movie.id, pending);
+    return pending;
   }
 
   // Players read this text, so keep it plain: no dashes, semicolons, or quotation marks.
@@ -267,6 +280,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   // Rates how creative a story-prompt answer is. This is separate from checking that it fits,
   // because a film accepted by keyword never went through the AI.
   async function rate(question, movie) {
+    void plotFor(movie);
     const details = await tmdb(`/movie/${movie.id}`, { append_to_response: 'keywords' });
     const verdict = await askDeepSeek(question, movie, details);
     return { bonus: verdict.fits ? verdict.bonus : 0, evidence: verdict.evidence };
@@ -486,6 +500,8 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     if (resolved.status !== 'found') return resolved.status === 'not-found' ?
       { status: 'rejected', reason:'movie-not-found' } : resolved;
     const movie = resolved.movie;
+    // Story and fact prompts usually end in an AI check that reads the plot, so start fetching it now.
+    if (deepseekKey && ['scenario', 'fact'].includes(question.kind)) void plotFor(movie);
     const pair = `${question.id}:${movie.id}`;
     if (learnedByPair.has(pair)) {
       const learnedItem = await rated(question, learnedByPair.get(pair).item);

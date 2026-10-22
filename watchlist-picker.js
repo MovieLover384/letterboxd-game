@@ -1,4 +1,6 @@
-import { apiRequest as api } from './letterboxd-api.js?v=4';
+import { apiRequest as api, warmUpApi } from './letterboxd-api.js?v=5';
+
+warmUpApi();
 
 const form = document.getElementById('watchlist-form');
 const usernameInput = document.getElementById('letterboxd-username');

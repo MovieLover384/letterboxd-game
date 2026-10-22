@@ -75,16 +75,22 @@ function json(request, response, status, value) {
   response.writeHead(status, headers(request));
   response.end(JSON.stringify(value));
 }
-function permit(request) {
+// Requests allowed per address in ten minutes. Each endpoint counts separately, so poster lookups
+// during a long round cannot use up the answer checks.
+const limits = { image: 600, verify: 90, watchlist: 30, other: 120 };
+function permit(request, pathname) {
   const origin = request.headers.origin;
   if (origin && !allowedOrigins.has(origin)) return false;
+  const bucket = pathname === '/api/image' ? 'image' : pathname === '/api/verify' ? 'verify' :
+    pathname.startsWith('/api/watchlist') ? 'watchlist' : 'other';
   const address = request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.socket.remoteAddress || 'unknown';
+  const key = `${bucket}:${address}`;
   const now = Date.now();
-  const times = (recent.get(address) || []).filter((time) => now - time < 600_000);
-  if (times.length >= 30) return false;
+  const times = (recent.get(key) || []).filter((time) => now - time < 600_000);
+  if (times.length >= limits[bucket]) return false;
   times.push(now);
-  recent.set(address, times);
-  if (recent.size > 1000) recent.delete(recent.keys().next().value);
+  recent.set(key, times);
+  if (recent.size > 2000) recent.delete(recent.keys().next().value);
   return true;
 }
 async function readJson(request) {
@@ -117,7 +123,7 @@ const server = http.createServer(async (request, response) => {
     }).end();
     return;
   }
-  if (!permit(request)) {
+  if (!permit(request, pathname)) {
     json(request, response, 429, { error: 'Too many requests. Try again later.' });
     return;
   }

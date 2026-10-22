@@ -1,5 +1,5 @@
 import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=26';
-import { apiUrl } from './letterboxd-api.js?v=3';
+import { apiUrl, warmUpApi } from './letterboxd-api.js?v=5';
 
 const $ = (id) => document.getElementById(id);
 const date = utcDay();
@@ -640,18 +640,24 @@ let catalog = null;
 
 // The server fixes each day's prompts on first request, so every player gets the same five even if
 // the catalog changes during the day. Without the server, the same prompts are worked out locally.
-async function loadDailyQuestions() {
-  try {
-    const response = await fetch(apiUrl(`api/daily?date=${date}`), {
-      cache: 'no-store', signal: AbortSignal.timeout(4000),
-    });
-    if (response.ok) {
-      const { ids } = await response.json();
-      const byId = new Map(catalog.questions.map((question) => [question.id, question]));
-      const pinned = Array.isArray(ids) ? ids.map((id) => byId.get(id)) : [];
-      if (pinned.length === 5 && pinned.every(Boolean)) return pinned;
-    }
-  } catch (error) { console.warn('Shared daily prompts unavailable:', error); }
+// The request starts before the large catalog finishes downloading, so the two overlap.
+function requestDailyIds() {
+  return (async () => {
+    try {
+      const response = await fetch(apiUrl(`api/daily?date=${date}`), {
+        cache: 'no-store', signal: AbortSignal.timeout(7000),
+      });
+      if (response.ok) return (await response.json()).ids;
+    } catch (error) { console.warn('Shared daily prompts unavailable:', error); }
+    return null;
+  })();
+}
+
+async function loadDailyQuestions(idsRequest) {
+  const ids = await idsRequest;
+  const byId = new Map(catalog.questions.map((question) => [question.id, question]));
+  const pinned = Array.isArray(ids) ? ids.map((id) => byId.get(id)) : [];
+  if (pinned.length === 5 && pinned.every(Boolean)) return pinned;
   return dailyQuestions(catalog, date);
 }
 
@@ -694,12 +700,15 @@ async function start() {
     }
   }
   try {
+    warmUpApi();
+    const idsRequest = isUnlimited ? null : requestDailyIds();
+    const seedRequest = fetch('backend/seed-learned-answers.json?v=1').catch(() => null);
     const response = await fetch('daily-catalog.json?v=27');
     if (!response.ok) throw new Error(`Catalog returned ${response.status}`);
     catalog = await response.json();
     try {
-      const seedResponse = await fetch('backend/seed-learned-answers.json?v=1');
-      if (seedResponse.ok) {
+      const seedResponse = await seedRequest;
+      if (seedResponse?.ok) {
         const seed = await seedResponse.json();
         if (Array.isArray(seed)) seed.forEach(({ questionId, item }) =>
           addLearnedAnswer(questionId, item));
@@ -710,7 +719,7 @@ async function start() {
       catch { unlimitedHistory = []; }
       if (!Array.isArray(unlimitedHistory)) unlimitedHistory = [];
     }
-    questions = isUnlimited ? nextUnlimitedQuestions() : await loadDailyQuestions();
+    questions = isUnlimited ? nextUnlimitedQuestions() : await loadDailyQuestions(idsRequest);
     restoreProgress();
     loadBestScores();
     $('loading-view').hidden = true;
