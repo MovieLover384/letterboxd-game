@@ -30,10 +30,12 @@ function aliases(movie) {
     const number = position + 1;
     return [`${series.name} ${number}`, `${series.name} ${series.numerals[position]}`, `${series.name} ${movie.year}`];
   });
+  // A title in another script (or one made only of symbols) has no letters or digits left once
+  // normalized. An empty alias would match any answer with no letters, such as "?".
   return new Set([...namesWithSubtitles, ...namesFromSeries].flatMap((name) => {
     const full = normalizeTitle(name);
     return [full, full.replace(/^(the|a|an) /, '')];
-  }));
+  }).filter(Boolean));
 }
 
 const SERIES = [
@@ -53,6 +55,8 @@ export function findMovie(question, answer) {
   const trimmed = answer.trim();
   if (!trimmed) return { status: 'empty' };
   const query = normalizeTitle(trimmed);
+  // Nothing but symbols ("?", "!!") names no film.
+  if (!query) return { status: 'empty' };
   const bareSeries = SERIES.find((series) => normalizeTitle(series.name) === query);
   if (bareSeries) {
     const matches = question.movies.filter((movie) =>
@@ -168,13 +172,15 @@ function distance(a, b) {
   return previous[b.length];
 }
 
-function correctionScore(query, candidate) {
+// `strict` is for film titles, where a suggestion should come from a real misspelling or a clear
+// beginning of the title, not from a short word that merely appears in it ("star" is not "Lucky Star").
+function correctionScore(query, candidate, strict = false) {
   const sorted = (value) => value.split(' ').filter((word) => !['a', 'an', 'the', 'of'].includes(word)).sort().join(' ');
   if (sorted(query) === sorted(candidate)) return 1;
   const whole = 1 - distance(query, candidate) / Math.max(query.length, candidate.length);
   // Character names are short: one extra letter can otherwise hide an obvious match.
-  if (query.length >= 4 && candidate.length >= 4 &&
-    query.slice(0, 3) === candidate.slice(0, 3) && distance(query, candidate) <= 2 &&
+  if (query.length >= (strict ? 6 : 4) && candidate.length >= 4 &&
+    query.slice(0, 3) === candidate.slice(0, 3) && distance(query, candidate) <= (strict ? 1 : 2) &&
     !query.includes(' ') && !candidate.includes(' ')) return Math.max(whole, .84);
   const candidateWords = candidate.split(' ');
   const queryWords = query.split(' ');
@@ -185,7 +191,9 @@ function correctionScore(query, candidate) {
     let bestIndex = -1;
     let bestScore = 0;
     unusedWords.forEach((part, index) => {
-      const prefix = part.slice(0, word.length);
+      // A typed word may stand for the beginning of a longer title word only when it is most of it.
+      const beginning = !strict || word.length >= Math.max(5, Math.ceil(part.length * .6));
+      const prefix = part.length > word.length && beginning ? part.slice(0, word.length) : part;
       const score = 1 - distance(word, prefix) / Math.max(word.length, prefix.length);
       if (score > bestScore) { bestIndex = index; bestScore = score; }
     });
@@ -193,7 +201,9 @@ function correctionScore(query, candidate) {
     return bestScore;
   });
   const extraWords = Math.max(0, candidateWords.length - queryWords.length);
-  const partial = queryWords.length <= candidateWords.length &&
+  // One typed word does not pick a title out of a longer one: "lord" is not "Metal Lords".
+  const lonelyWord = strict && queryWords.length === 1 && candidateWords.length > 1;
+  const partial = !lonelyWord && queryWords.length <= candidateWords.length &&
     wordScores.every((score) => score >= .7) &&
     queryWords.some((word) => word.length >= 4)
     ? wordScores.reduce((sum, score) => sum + score, 0) / wordScores.length * .94 *
@@ -272,7 +282,7 @@ export function closestAnswer(question, answer) {
     if (names) return { item, score: nameSimilarity(answer, item.name) };
     return {
       item,
-      score: Math.max(...[...aliases(item)].filter(Boolean).map((label) => correctionScore(query, normalizeTitle(label)))),
+      score: Math.max(...[...aliases(item)].filter(Boolean).map((label) => correctionScore(query, normalizeTitle(label), true))),
     };
   }).sort((a, b) => b.score - a.score || (names ? (a.item.order ?? 99) - (b.item.order ?? 99) :
     (b.item.votes || 0) - (a.item.votes || 0)));
@@ -288,8 +298,8 @@ export function closestAnswer(question, answer) {
   return best.item;
 }
 
-export function titleSimilarity(a, b) {
-  return correctionScore(normalizeTitle(a), normalizeTitle(b));
+export function titleSimilarity(a, b, strict = false) {
+  return correctionScore(normalizeTitle(a), normalizeTitle(b), strict);
 }
 
 export function utcDay(date = new Date()) {

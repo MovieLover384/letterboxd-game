@@ -1,4 +1,4 @@
-import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=27';
+import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=28';
 import { apiUrl, warmUpApi } from './letterboxd-api.js?v=5';
 
 const $ = (id) => document.getElementById(id);
@@ -600,7 +600,7 @@ $('answer-form').addEventListener('submit', async (event) => {
     return;
   }
   if (result.status === 'empty') {
-    $('answer-feedback').textContent = 'Type an answer first.';
+    $('answer-feedback').textContent = typed ? 'Use letters or numbers in your answer.' : 'Type an answer first.';
     return;
   }
   if (result.status === 'series') {

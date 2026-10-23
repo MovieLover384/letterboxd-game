@@ -24,6 +24,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   for (const movie of allMovies) {
     for (const title of new Set([movie.title, movie.originalTitle])) {
       const key = normalizeTitle(title);
+      if (!key) continue;
       if (!titleIndex.has(key)) titleIndex.set(key, []);
       titleIndex.get(key).push(movie);
     }
@@ -188,7 +189,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
       // No title matched exactly, so offer the closest spelling for the player to confirm.
       const similar = search.results.filter((movie) => released(movie) &&
         (movie.vote_count || 0) >= 50 && [movie.title, movie.original_title].some((name) =>
-          titleSimilarity(title, name || '') >= .8));
+          titleSimilarity(title, name || '', true) >= .8));
       exact.push(...similar);
       corrected = exact.length > 0;
     }
@@ -417,7 +418,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
 
   async function verify(questionId, answer) {
     const question = questions.get(questionId);
-    if (!question || typeof answer !== 'string' || !answer.trim() || answer.length > 160)
+    if (!question || typeof answer !== 'string' || !normalizeTitle(answer) || answer.length > 160)
       return { status: 'invalid' };
     const known = findAnswer(question, answer);
     if (known.status === 'match') {
