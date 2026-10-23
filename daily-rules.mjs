@@ -46,6 +46,8 @@ export function rolesOf(character = '') {
 const standaloneNumberTitles = new Set(['district 9','8 mile','9','se7en','oceans 8']);
 // Rules about the shape of a title, which a joined word like "WarGames" must not change.
 const shapeRules = new Set(['one-word','two-words','long-title','colon','possessive','question','and']);
+// The other rules are word lists ("city" lists fourteen cities), so a title they miss may still fit.
+export const isShapeRule = (rule) => shapeRules.has(rule);
 export function titleFits(rule,title) {
   if (rule === 'number' && !standaloneNumberTitles.has(
     title.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()) &&

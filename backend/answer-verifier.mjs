@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { closestAnswer, findAnswer, findMovie, nameSimilarity, normalizeTitle, optionsFor, scoreAnswer,
   titleSimilarity } from '../daily-core.mjs';
 import { scenarioKeywords } from './daily-scenarios.mjs';
-import { rolesOf, titleFits } from '../daily-rules.mjs';
+import { isShapeRule, rolesOf, titleFits } from '../daily-rules.mjs';
 
 const cleanMovie = (movie) => ({
   id: movie.id,
@@ -78,10 +78,11 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   let learned = [];
   try {
     const saved = JSON.parse(await fs.readFile(dataFile, 'utf8'));
-    if (Array.isArray(saved)) learned = saved.filter(({ questionId, item }) => {
+    if (Array.isArray(saved)) learned = saved.filter(({ questionId, item, source }) => {
       const question = questions.get(questionId);
+      // A title the word list misses stays valid when the AI approved it.
       return question && Number.isInteger(item?.id) &&
-        (question.kind !== 'title' || titleFits(question.rule, item.title));
+        (question.kind !== 'title' || source === 'deepseek' || titleFits(question.rule, item.title));
     });
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
@@ -267,8 +268,38 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     throw failure;
   }
 
+  // A prompt about the title itself: only the title text matters, so there is no plot to fetch and
+  // the reply is short.
+  const TITLE_JUDGE = 'You judge whether a film title fits a trivia prompt about its title. Use only the title text supplied (title and original title), never the plot. Answer yes when a word or name in the title clearly belongs to the category in the prompt, including less common examples that a short word list could miss: for a city prompt any real city such as Stockholm or Lagos counts, and for a profession prompt any real profession counts. The word must be a real word of the title, so a word hidden inside another word, like war in Award, does not count. Follow any note in brackets in the prompt: for a number prompt a sequel number such as the 3 in Saw 3 or Part II does not count. Think first and write the reason before the verdict, and make sure the verdict agrees with the reason. Return JSON only with the keys in this order: {"reason":"...","confidence":"high"|"medium"|"low","fits":true|false}. Write the reason as one short sentence in plain English that names the word in the title. Never use dashes, semicolons, or quotation marks. A good reason for a no looks like this: The title Bleeder has no color word in it.';
+
+  async function askDeepSeekTitleOnce(question, movie) {
+    const response = await fetchImpl('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${deepseekKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-flash', thinking: { type: 'disabled' },
+        response_format: { type: 'json_object' }, max_tokens: 150,
+        messages: [
+          { role: 'system', content: TITLE_JUDGE },
+          { role: 'user', content: JSON.stringify({ prompt: question.prompt,
+            film: { title: movie.title, originalTitle: movie.originalTitle || movie.title, year: movie.year } }) },
+        ],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) throw new Error(`DeepSeek returned ${response.status}`);
+    const data = await response.json();
+    if (data.choices?.[0]?.finish_reason !== 'stop') throw new Error('DeepSeek did not finish');
+    const verdict = JSON.parse(data.choices[0].message.content);
+    const reasoned = typeof verdict.reason === 'string' && verdict.reason.trim().length >= 8;
+    const fits = verdict.fits === true && ['high', 'medium'].includes(verdict.confidence) && reasoned;
+    return { fits, unsure: verdict.fits === true && !fits,
+      evidence: typeof verdict.reason === 'string' ? plainReason(verdict.reason) : '', bonus: 0, scoreFloor: 0 };
+  }
+
   async function askDeepSeekOnce(question, movie, details) {
     if (!deepseekKey) throw new Error('DEEPSEEK_API_KEY is not configured');
+    if (question.kind === 'title') return askDeepSeekTitleOnce(question, movie);
     const plot = await plotFor(movie);
     const response = await fetchImpl('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -357,8 +388,14 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   async function inspectMovie(question, movie) {
     if (question.kind === 'year') return { fits: movie.year === question.year,
       source: 'release-date', votes: movie.votes };
-    if (question.kind === 'title') return { fits: titleFits(question.rule,movie.title) ||
-      titleFits(question.rule,movie.originalTitle || ''), source: 'title', votes: movie.votes };
+    if (question.kind === 'title') {
+      const fits = titleFits(question.rule, movie.title) || titleFits(question.rule, movie.originalTitle || '');
+      // Shape rules (one word, a colon, a question mark) are exact. A word-list rule can miss a
+      // title that fits, such as a city that is not on the list, so the AI gets the last word.
+      if (fits || isShapeRule(question.rule) || !deepseekKey) return { fits, source: 'title', votes: movie.votes };
+      const verdict = await askDeepSeek(question, movie, {});
+      return { ...verdict, source: 'deepseek', votes: movie.votes };
+    }
     if (question.kind === 'actor' || question.kind === 'director') {
       const credits = await tmdb(`/movie/${movie.id}/credits`);
       const personId = Number(question.id.split('-')[1]);
