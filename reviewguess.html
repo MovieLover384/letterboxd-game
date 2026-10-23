@@ -115,7 +115,9 @@ function titleTooVisible(review, title) {
 async function loadMovies() {
   const res = await fetch("reviewguess.json");
   const data = await res.json();
-  movies = data.data;
+  // A round needs a few reviews that do not give the title away.
+  movies = data.data.filter(m =>
+    m.reviews.filter(r => !titleTooVisible(r.review, m.film_name)).length >= 2);
   startNewGame();
 }
 
@@ -165,7 +167,7 @@ function showNextReview() {
 
   const authorText = document.createElement("p");
   authorText.className = "text-gray-400 text-sm md:text-base italic";
-  authorText.textContent = `- ${reviewObj.author} (${reviewObj.rating})`;
+  authorText.textContent = `- ${reviewObj.author}${reviewObj.rating ? ` (${reviewObj.rating})` : ""}`;
 
   container.appendChild(reviewText);
   container.appendChild(authorText);
