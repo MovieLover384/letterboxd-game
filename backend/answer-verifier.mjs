@@ -223,7 +223,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
         const url = new URL('https://en.wikipedia.org/w/api.php');
         url.search = new URLSearchParams({ action: 'query', prop: 'extracts', explaintext: '1',
           exsectionformat: 'wiki', redirects: '1', format: 'json', titles: title });
-        const response = await fetchImpl(url, { signal: AbortSignal.timeout(6000),
+        const response = await fetchImpl(url, { signal: AbortSignal.timeout(4000),
           headers: { 'User-Agent': 'MovieKnowledge/1.0 (fan trivia game)', Accept: 'application/json' } });
         if (!response.ok) return '';
         const page = Object.values((await response.json()).query?.pages || {})[0];
@@ -276,7 +276,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
               keywords: details.keywords?.keywords?.map(({ name }) => name).slice(0, 35) || [] } }) },
         ],
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) throw new Error(`DeepSeek returned ${response.status}`);
     const data = await response.json();

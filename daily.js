@@ -1,4 +1,4 @@
-import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=26';
+import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=27';
 import { apiUrl, warmUpApi } from './letterboxd-api.js?v=5';
 
 const $ = (id) => document.getElementById(id);
@@ -76,8 +76,11 @@ function recordHighScore(total) {
   note.classList.toggle('new-best', isNew);
 }
 
-function addLearnedAnswer(questionId, item) {
-  const question = catalog?.questions.find((candidate) => candidate.id === questionId);
+// Answers other players taught the game. They are kept, so questions loaded later get them too.
+const learnedAnswers = [];
+function addLearnedAnswer(questionId, item, remember = true) {
+  if (remember) learnedAnswers.push({ questionId, item });
+  const question = loadedQuestions.get(questionId);
   if (!question || !Number.isInteger(item?.id)) return;
   const options = optionsFor(question);
   const existing = options.find((option) => option.id === item.id);
@@ -92,15 +95,16 @@ function addLearnedAnswer(questionId, item) {
   else options.push(item);
 }
 
-function nextUnlimitedQuestions() {
+async function nextUnlimitedQuestions() {
   const known = new Set(playableQuestions(catalog).map((question) => question.id));
   unlimitedHistory = unlimitedHistory.filter((id) => known.has(id));
   const next = unlimitedQuestions(catalog, unlimitedHistory);
+  const loaded = await loadQuestions(next.map((question) => question.id));
   unlimitedHistory.push(...next.map((question) => question.id));
   unlimitedHistory = unlimitedHistory.slice(-2000);
   try { localStorage.setItem(unlimitedHistoryKey, JSON.stringify(unlimitedHistory)); }
   catch { /* The game still works without saved history. */ }
-  return next;
+  return loaded;
 }
 
 function saveProgress() {
@@ -118,8 +122,11 @@ function restoreProgress() {
       const question = questions[index];
       if (!question) break;
       const item = optionsFor(question).find((option) => option.id === answer.answerId);
+      // A story answer's creativity rating arrives from the server after the page loads, so a
+      // saved score may be higher than the catalog alone gives. It can never be lower.
       if (answer.questionId !== question.id ||
-        (answer.answerId !== null && (!item || scoreAnswer(question, item).points !== answer.points)) ||
+        (answer.answerId !== null && (!item || scoreAnswer(question, item).points > answer.points ||
+          ![10, 30, 60, 85, 100].includes(answer.points))) ||
         (answer.answerId === null && answer.points !== 0)) break;
       answers.push(answer);
     }
@@ -244,21 +251,22 @@ function showCorrection(question, original, item) {
 // Set while an answer is being checked, so emptying the answer box can stop the check.
 let checkController = null;
 
-// A dropped connection, a server that is still waking up, or a busy moment at the movie database
-// usually clears within a second or two, so a failed check is tried again before giving up. The
-// player can cancel at any time, which returns a "cancelled" result.
-async function verifyOnline(questionId, answer, cancel, onRetry) {
-  for (let attempt = 0; attempt < 3; attempt++) {
+// A dropped connection or a busy moment at the movie database usually clears within a second or two,
+// so a failed check is tried once more before giving up. A slow check is not retried at once: the
+// server is still working on it, and a second request would only queue behind the first. The player
+// can cancel at any time, which returns a "cancelled" result.
+async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2, timeoutMs = 25000 } = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     if (cancel.aborted) return { status: 'cancelled' };
     if (attempt) {
       onRetry();
-      await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       if (cancel.aborted) return { status: 'cancelled' };
     }
     const attemptController = new AbortController();
     const stop = () => attemptController.abort();
     cancel.addEventListener('abort', stop, { once: true });
-    const timer = setTimeout(stop, 30000);
+    const timer = setTimeout(stop, timeoutMs);
     try {
       const response = await fetch(apiUrl('api/verify'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -536,8 +544,16 @@ document.addEventListener('keydown', (event) => {
 
 $('start-button').addEventListener('click', () => { started = true; render(); });
 $('skip-button').addEventListener('click', () => recordAnswer(null, 'skipped'));
-$('again-button').addEventListener('click', () => {
-  questions = nextUnlimitedQuestions();
+$('again-button').addEventListener('click', async () => {
+  const button = $('again-button');
+  button.disabled = true;
+  try { questions = await nextUnlimitedQuestions(); }
+  catch (error) {
+    console.error('Next round could not load:', error);
+    $('record-note').textContent = 'Could not load the next round. Check your connection and try again.';
+    return;
+  }
+  finally { button.disabled = false; }
   answers = [];
   deadline = null;
   started = false;
@@ -600,19 +616,24 @@ $('answer-form').addEventListener('submit', async (event) => {
   $('skip-button').disabled = true;
   $('answer-feedback').textContent = ['character','role'].includes(question.kind) ? 'Checking this character…' :
     ['cast','collab'].includes(question.kind) ? 'Checking this actor…' : 'Checking this movie…';
-  const slowNotice = setTimeout(() => {
-    $('answer-feedback').textContent = 'Still checking. The movie service may be waking up…';
-  }, 5000);
+  // An answer the game already knows only goes to the server to be rated for creativity. That is
+  // not worth a long wait: after a few seconds it scores as the catalog says, and the server
+  // finishes the rating in the background for the next player.
+  const quick = Boolean(localMatch);
+  const slowNotices = quick ? [] : [
+    setTimeout(() => { $('answer-feedback').textContent = 'Still checking this answer…'; }, 4000),
+    setTimeout(() => { $('answer-feedback').textContent = 'The movie service is slow right now. Still trying…'; }, 12000),
+  ];
   let checked;
   checkController = new AbortController();
   try {
     checked = await verifyOnline(question.id, typed, checkController.signal, () => {
-      clearTimeout(slowNotice);
+      slowNotices.forEach(clearTimeout);
       $('answer-feedback').textContent = 'Trying again…';
-    });
+    }, quick ? { attempts: 1, timeoutMs: 6000 } : undefined);
   } finally {
     checkController = null;
-    clearTimeout(slowNotice);
+    slowNotices.forEach(clearTimeout);
     if (deadline) deadline += Date.now() - startedChecking;
     saveProgress();
     checkingAnswer = false;
@@ -674,16 +695,52 @@ $('answer-form').addEventListener('submit', async (event) => {
   }
 });
 
+// `catalog` is the small index (daily-index.json): every prompt without its answers, enough to pick
+// a round. A prompt's answers live in daily-questions/<id>.json and are fetched only for the
+// prompts a round plays, so a round downloads a few hundred KB instead of the 23 MB catalog.
 let catalog = null;
+const loadedQuestions = new Map();
+const questionRequests = new Map();
+let indexRequest = null;
+
+function loadIndex() {
+  if (!indexRequest) {
+    indexRequest = fetch('daily-index.json').then((response) => {
+      if (!response.ok) throw new Error(`Index returned ${response.status}`);
+      return response.json();
+    }).then((index) => (catalog = index));
+    indexRequest.catch(() => { indexRequest = null; });
+  }
+  return indexRequest;
+}
+
+function loadQuestion(id) {
+  if (!questionRequests.has(id)) {
+    const request = fetch(`daily-questions/${encodeURIComponent(id)}.json`).then((response) => {
+      if (!response.ok) throw new Error(`Question ${id} returned ${response.status}`);
+      return response.json();
+    }).then((question) => {
+      loadedQuestions.set(id, question);
+      for (const entry of learnedAnswers)
+        if (entry.questionId === id) addLearnedAnswer(id, entry.item, false);
+      return question;
+    });
+    request.catch(() => questionRequests.delete(id));
+    questionRequests.set(id, request);
+  }
+  return questionRequests.get(id);
+}
+
+const loadQuestions = (ids) => Promise.all(ids.map(loadQuestion));
 
 // The server fixes each day's prompts on first request, so every player gets the same five even if
-// the catalog changes during the day. Without the server, the same prompts are worked out locally.
-// The request starts before the large catalog finishes downloading, so the two overlap.
+// the catalog changes during the day. The server is a free host that sleeps when idle, so it only
+// gets a moment to answer: without it, the same prompts are worked out locally from the index.
 function requestDailyIds() {
   return (async () => {
     try {
       const response = await fetch(apiUrl(`api/daily?date=${date}`), {
-        cache: 'no-store', signal: AbortSignal.timeout(7000),
+        cache: 'no-store', signal: AbortSignal.timeout(2500),
       });
       if (response.ok) return (await response.json()).ids;
     } catch (error) { console.warn('Shared daily prompts unavailable:', error); }
@@ -693,10 +750,12 @@ function requestDailyIds() {
 
 async function loadDailyQuestions(idsRequest) {
   const ids = await idsRequest;
-  const byId = new Map(catalog.questions.map((question) => [question.id, question]));
-  const pinned = Array.isArray(ids) ? ids.map((id) => byId.get(id)) : [];
-  if (pinned.length === 5 && pinned.every(Boolean)) return pinned;
-  return dailyQuestions(catalog, date);
+  if (Array.isArray(ids) && ids.length === 5) {
+    try { return await loadQuestions(ids); }
+    catch (error) { console.warn('Pinned daily prompts unavailable:', error); }
+  }
+  await loadIndex();
+  return loadQuestions(dailyQuestions(catalog, date).map((question) => question.id));
 }
 
 async function loadSharedAnswers() {
@@ -741,9 +800,16 @@ async function start() {
     warmUpApi();
     const idsRequest = isUnlimited ? null : requestDailyIds();
     const seedRequest = fetch('backend/seed-learned-answers.json?v=1').catch(() => null);
-    const response = await fetch('daily-catalog.json?v=27');
-    if (!response.ok) throw new Error(`Catalog returned ${response.status}`);
-    catalog = await response.json();
+    const index = loadIndex();
+    // The daily round normally needs no index; it only backs up a slow or missing server.
+    if (!isUnlimited) index.catch(() => {});
+    if (isUnlimited) {
+      await index;
+      try { unlimitedHistory = JSON.parse(localStorage.getItem(unlimitedHistoryKey) || '[]'); }
+      catch { unlimitedHistory = []; }
+      if (!Array.isArray(unlimitedHistory)) unlimitedHistory = [];
+    }
+    questions = isUnlimited ? await nextUnlimitedQuestions() : await loadDailyQuestions(idsRequest);
     try {
       const seedResponse = await seedRequest;
       if (seedResponse?.ok) {
@@ -752,12 +818,6 @@ async function start() {
           addLearnedAnswer(questionId, item));
       }
     } catch (error) { console.warn('Seed answers unavailable:', error); }
-    if (isUnlimited) {
-      try { unlimitedHistory = JSON.parse(localStorage.getItem(unlimitedHistoryKey) || '[]'); }
-      catch { unlimitedHistory = []; }
-      if (!Array.isArray(unlimitedHistory)) unlimitedHistory = [];
-    }
-    questions = isUnlimited ? nextUnlimitedQuestions() : await loadDailyQuestions(idsRequest);
     restoreProgress();
     loadBestScores();
     $('loading-view').hidden = true;

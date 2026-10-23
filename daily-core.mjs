@@ -306,28 +306,35 @@ export function dailyNumber(date = utcDay()) {
 const RETIRED_SCENARIOS = new Set(['helicopter','underwater','police-officer','baseball',
   'based-on-video-game']);
 
+// The page picks prompts from daily-index.json, which has the same questions without their answer
+// lists, so selection reads these counts (stored on the index) instead of the lists themselves.
+function optionCount(question) {
+  return question.optionCount ?? optionsFor(question).length;
+}
+
 function poolFor(catalog, slot) {
   if (slot === 'scenario') return catalog.questions.filter((question) =>
-    question.kind === 'scenario' && question.movies.length >= 30 &&
+    question.kind === 'scenario' && optionCount(question) >= 30 &&
     !RETIRED_SCENARIOS.has(question.label));
   if (slot === 'fact') return catalog.questions.filter((question) =>
-    question.kind === 'fact' && question.movies.length >= 30);
+    question.kind === 'fact' && optionCount(question) >= 30);
   if (slot === 'character') return catalog.questions.filter((question) =>
-    ['character','role'].includes(question.kind) && optionsFor(question).length >= 15);
+    ['character','role'].includes(question.kind) && optionCount(question) >= 15);
   // Players should know a decent number of the films, so a language only counts when it
   // has plenty of well-known ones.
   if (slot === 'attribute') return catalog.questions.filter((question) =>
-    question.kind === 'attribute' && optionsFor(question).length >= 30 &&
+    question.kind === 'attribute' && optionCount(question) >= 30 &&
     (question.attribute.type !== 'language' || wellKnown(question, 500) >= 25));
   // Prompts about film crews, shared casts, franchises, and collaborators have smaller
   // answer pools than the broad themes, so each type sets its own minimum.
   if (slot === 'special') return catalog.questions.filter((question) =>
-    optionsFor(question).length >= (SPECIAL_MINIMUMS[question.kind] ?? Infinity));
+    optionCount(question) >= (SPECIAL_MINIMUMS[question.kind] ?? Infinity));
   return catalog.questions.filter((question) =>
-    optionsFor(question).length >= (FILM_MINIMUMS[question.kind] ?? Infinity) &&
+    optionCount(question) >= (FILM_MINIMUMS[question.kind] ?? Infinity) &&
     (question.kind !== 'studio' || wellKnown(question, 1000) >= 10));
 }
 function wellKnown(question, minimumVotes) {
+  if (question.wellKnown) return question.wellKnown[minimumVotes] ?? 0;
   return question.movies.filter((movie) => movie.votes >= minimumVotes).length;
 }
 const SPECIAL_MINIMUMS = { title: 30, year: 30, crew: 10, franchise: 5, collab: 15 };
