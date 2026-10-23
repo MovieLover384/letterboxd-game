@@ -20,6 +20,12 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   const questions = new Map(catalog.questions.map((question) => [question.id, question]));
   const allMovies = [...new Map(catalog.questions.flatMap((question) => question.movies || [])
     .map((movie) => [movie.id, movie])).values()];
+  // Films worth suggesting when a typed title is close to one. The scan compares the typed text with
+  // every title variant, so it skips the obscure tail; the TMDB search still finds those films.
+  const suggestable = allMovies.filter((movie) => movie.votes >= 50);
+  // The first lookup builds every film's title variants, which takes a while on a small server,
+  // so do it now instead of during the first player's answer.
+  findMovie({ movies: allMovies }, 'warm up');
   const titleIndex = new Map();
   for (const movie of allMovies) {
     for (const title of new Set([movie.title, movie.originalTitle])) {
@@ -194,7 +200,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
       corrected = exact.length > 0;
     }
     if (!exact.length && normalizeTitle(title).length >= 4) {
-      const near = closestAnswer({ kind: 'film', movies: allMovies }, title);
+      const near = closestAnswer({ kind: 'film', movies: suggestable }, title);
       if (near && (!year || near.year === year))
         return { status: 'found', movie: cleanMovie(near), corrected: true };
     }

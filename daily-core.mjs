@@ -17,7 +17,18 @@ export function normalizeTitle(value) {
     .replace(/^(the|a|an) /, '');
 }
 
+// Every title a film can be typed as. Building this is slow, and the server checks answers against
+// tens of thousands of films, so the result is kept until the film's alternate titles change.
+const aliasCache = new WeakMap();
 function aliases(movie) {
+  const cached = aliasCache.get(movie);
+  if (cached && cached.alternates === movie.alternateTitles && cached.title === movie.title) return cached.names;
+  const names = buildAliases(movie);
+  aliasCache.set(movie, { alternates: movie.alternateTitles, title: movie.title, names });
+  return names;
+}
+
+function buildAliases(movie) {
   const names = [movie.title, movie.originalTitle, ...(movie.alternateTitles || [])].filter(Boolean);
   const namesWithSubtitles = names.flatMap((name) => {
     const prefix = name.split(':')[0];
@@ -159,15 +170,28 @@ export function findAnswer(question, answer) {
     : matches.length ? { status: 'ambiguous', matches } : { status: 'not-found' };
 }
 
+// Edit distance between two strings. This runs for every candidate title, so it reuses two typed
+// rows instead of allocating new arrays for each letter.
+let rowA = new Int32Array(64);
+let rowB = new Int32Array(64);
 function distance(a, b) {
-  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (rowA.length <= b.length) { rowA = new Int32Array(b.length * 2); rowB = new Int32Array(b.length * 2); }
+  let previous = rowA;
+  let current = rowB;
+  for (let j = 0; j <= b.length; j++) previous[j] = j;
   for (let i = 1; i <= a.length; i++) {
-    const current = [i];
+    current[0] = i;
+    const letter = a.charCodeAt(i - 1);
     for (let j = 1; j <= b.length; j++) {
-      current[j] = Math.min(current[j - 1] + 1, previous[j] + 1,
-        previous[j - 1] + Number(a[i - 1] !== b[j - 1]));
+      const substitute = previous[j - 1] + (letter === b.charCodeAt(j - 1) ? 0 : 1);
+      const insert = current[j - 1] + 1;
+      const remove = previous[j] + 1;
+      current[j] = substitute < insert ? (substitute < remove ? substitute : remove) : (insert < remove ? insert : remove);
     }
-    previous.splice(0, previous.length, ...current);
+    const swap = previous; previous = current; current = swap;
   }
   return previous[b.length];
 }
@@ -278,12 +302,25 @@ export function closestAnswer(question, answer) {
   const query = normalizeTitle(answer);
   const names = isNameKind(question.kind);
   if (query.length < (names ? 3 : 4)) return null;
+  const queryHasSpace = query.includes(' ');
+  const queryWordCount = query.split(' ').length;
+  // Most titles are nowhere near what was typed. A title can only score well when it is about as
+  // long as the text, or longer with the typed words at its start, so the rest skip the full compare.
+  const reachable = (label) => {
+    const gap = Math.abs(label.length - query.length) / Math.max(label.length, query.length);
+    if (gap <= .22) return true;
+    if (label.includes(' ')) return label.split(' ').length >= queryWordCount;
+    return !queryHasSpace && query.length >= 5 && gap <= .4;
+  };
   const matches = optionsFor(question).map((item) => {
     if (names) return { item, score: nameSimilarity(answer, item.name) };
-    return {
-      item,
-      score: Math.max(...[...aliases(item)].filter(Boolean).map((label) => correctionScore(query, normalizeTitle(label), true))),
-    };
+    let score = 0;
+    for (const label of aliases(item)) {
+      if (!label || !reachable(label)) continue;
+      const labelScore = correctionScore(query, label, true);
+      if (labelScore > score) score = labelScore;
+    }
+    return { item, score };
   }).sort((a, b) => b.score - a.score || (names ? (a.item.order ?? 99) - (b.item.order ?? 99) :
     (b.item.votes || 0) - (a.item.votes || 0)));
   const [best] = matches;
