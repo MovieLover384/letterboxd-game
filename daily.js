@@ -275,6 +275,8 @@ async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2,
       });
       // A 400 carries a normal "invalid" result; busy or failing servers are worth another try.
       if (response.ok || response.status === 400) return await response.json();
+      // Too many checks lately: asking again straight away only gets the same answer.
+      if (response.status === 429) return { status: 'unavailable', reason: 'busy' };
       throw new Error(`Verifier returned ${response.status}`);
     } catch (error) {
       if (cancel.aborted) return { status: 'cancelled' };
@@ -665,7 +667,10 @@ $('answer-form').addEventListener('submit', async (event) => {
   }
   if (checked.status === 'unavailable') {
     if (localMatch) { recordAnswer(localMatch); return; }
-    $('answer-feedback').textContent = 'Couldn’t reach the movie database. Please try again in a moment.';
+    // The typed text stays in the box, so pressing Enter again is a one-key retry.
+    $('answer-feedback').textContent = checked.reason === 'busy' ?
+      'Lots of answers are being checked right now. Press Enter to try again in a few seconds.' :
+      'The answer check did not respond. Press Enter to try again.';
     return;
   }
   if (localMatch) { recordAnswer(localMatch); return; }

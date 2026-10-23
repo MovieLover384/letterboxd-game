@@ -77,13 +77,21 @@ function json(request, response, status, value) {
 }
 // Requests allowed per address in ten minutes. Each endpoint counts separately, so poster lookups
 // during a long round cannot use up the answer checks.
-const limits = { image: 600, verify: 90, watchlist: 30, other: 120 };
+const limits = { image: 600, verify: 240, watchlist: 30, other: 400 };
+// Cloudflare sits in front of the host and sets the visitor's real address, which a visitor cannot
+// override. Without it every player can share the proxy's address, and one busy minute then locks
+// out everybody, so fall back to the first forwarded address only when it is missing.
+function clientAddress(request) {
+  const header = (name) => String(request.headers[name] || '').split(',')[0].trim();
+  return header('cf-connecting-ip') || header('true-client-ip') || header('x-forwarded-for') ||
+    request.socket.remoteAddress || 'unknown';
+}
 function permit(request, pathname) {
   const origin = request.headers.origin;
   if (origin && !allowedOrigins.has(origin)) return false;
   const bucket = pathname === '/api/image' ? 'image' : pathname === '/api/verify' ? 'verify' :
     pathname.startsWith('/api/watchlist') ? 'watchlist' : 'other';
-  const address = request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.socket.remoteAddress || 'unknown';
+  const address = clientAddress(request);
   const key = `${bucket}:${address}`;
   const now = Date.now();
   const times = (recent.get(key) || []).filter((time) => now - time < 600_000);
@@ -107,7 +115,7 @@ const server = http.createServer(async (request, response) => {
   // Older copies of the site called /letterboxd-game/api/..., so both prefixes work.
   const pathname = new URL(request.url, 'http://localhost').pathname.replace(/^\/letterboxd-game(?=\/)/, '');
   if (pathname === '/health') {
-    json(request, response, 200, { status: 'ok', checks, recentFailures });
+    json(request, response, 200, { status: 'ok', checks, recentFailures, you: clientAddress(request) });
     return;
   }
   if (request.method === 'OPTIONS' && pathname.startsWith('/api/')) {
