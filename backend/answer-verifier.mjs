@@ -127,7 +127,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
       if (attempt) await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
       let retryable = true;
       try {
-        const response = await fetchImpl(url, { signal: AbortSignal.timeout(10000) });
+        const response = await fetchImpl(url, { signal: AbortSignal.timeout(6000) });
         if (response.ok) return await response.json();
         failure = new Error(`TMDB returned ${response.status}`);
         retryable = response.status === 429 || response.status >= 500;
@@ -169,26 +169,26 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     const direct = search.results.filter(matchesTitle);
     let exact = [];
     if (!direct.length) {
+      // The other-language searches and the alternate-title lookups run side by side, because
+      // waiting for one before starting the other doubles the time a typed title takes.
       const languages = ['sv-SE','pt-BR','es-ES','fr-FR','de-DE','it-IT','ja-JP','ko-KR'];
-      const localized = await Promise.all(languages.map(async (language) => {
+      const localizedSearch = Promise.all(languages.map(async (language) => {
         try {
           const result = await tmdb('/search/movie', { query: title, include_adult: 'false', language });
           return result.results.filter(matchesTitle);
         } catch { return []; }
       }));
-      exact.push(...localized.flat());
-    }
-    if (!direct.length && (!exact.length ||
-      Math.max(...exact.map((movie) => movie.vote_count || 0)) < 1000)) {
-      // Other-language and alternate titles only count when no film has the title itself.
-      const candidates = search.results.filter(released).slice(0, 5);
-      const checked = await Promise.all(candidates.map(async (movie) => {
+      const alternateSearch = Promise.all(search.results.filter(released).slice(0, 5).map(async (movie) => {
         try {
           const alternatives = await tmdb(`/movie/${movie.id}/alternative_titles`);
           return alternatives.titles?.some(({ title }) => normalizeTitle(title) === key) ? movie : null;
         } catch { return null; }
       }));
-      exact.push(...checked.filter(Boolean));
+      const [localized, alternates] = await Promise.all([localizedSearch, alternateSearch]);
+      exact.push(...localized.flat());
+      // Alternate titles only count when no film has the title itself in another language.
+      if (!exact.length || Math.max(...exact.map((movie) => movie.vote_count || 0)) < 1000)
+        exact.push(...alternates.filter(Boolean));
     }
     if (direct.length) exact = direct;
     let corrected = false;
@@ -231,7 +231,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
         const url = new URL('https://en.wikipedia.org/w/api.php');
         url.search = new URLSearchParams({ action: 'query', prop: 'extracts', explaintext: '1',
           exsectionformat: 'wiki', redirects: '1', format: 'json', titles: title });
-        const response = await fetchImpl(url, { signal: AbortSignal.timeout(4000),
+        const response = await fetchImpl(url, { signal: AbortSignal.timeout(2500),
           headers: { 'User-Agent': 'MovieKnowledge/1.0 (fan trivia game)', Accept: 'application/json' } });
         if (!response.ok) return '';
         const page = Object.values((await response.json()).query?.pages || {})[0];
@@ -254,18 +254,31 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
 
   // Timeouts, busy moments, cut-off replies and malformed JSON are one-off hiccups, so the check is
   // retried before the player is told anything. A missing or rejected key is not worth retrying.
-  async function askDeepSeek(question, movie, details) {
-    let failure;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt) await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
-      try { return await askDeepSeekOnce(question, movie, details); }
-      catch (error) {
-        failure = error;
-        console.warn(`DeepSeek attempt ${attempt + 1} failed:`, error.message);
-        if (/not configured|returned (?:400|401|402|403)\b/.test(error.message)) break;
-      }
-    }
-    throw failure;
+  // A slow reply is not waited out: if the first request has not answered after a few seconds, a
+  // second one starts beside it and the first answer to arrive wins. A failed request is replaced
+  // at once instead of after a pause.
+  const AI_HEDGE_MS = 3000;
+  function askDeepSeek(question, movie, details) {
+    return new Promise((resolve, reject) => {
+      let started = 0, failed = 0, settled = false, hedge;
+      const finish = (settle, value) => { settled = true; clearTimeout(hedge); settle(value); };
+      const launch = () => {
+        if (settled || started >= 3) return;
+        started++;
+        clearTimeout(hedge);
+        hedge = setTimeout(launch, AI_HEDGE_MS);
+        askDeepSeekOnce(question, movie, details).then((verdict) => {
+          if (!settled) finish(resolve, verdict);
+        }, (error) => {
+          if (settled) return;
+          failed++;
+          console.warn(`DeepSeek attempt ${failed} failed:`, error.message);
+          if (/not configured|returned (?:400|401|402|403)\b/.test(error.message)) finish(reject, error);
+          else if (failed === started) { if (started >= 3) finish(reject, error); else launch(); }
+        });
+      };
+      launch();
+    });
   }
 
   // A prompt about the title itself: only the title text matters, so there is no plot to fetch and

@@ -255,7 +255,7 @@ let checkController = null;
 // so a failed check is tried once more before giving up. A slow check is not retried at once: the
 // server is still working on it, and a second request would only queue behind the first. The player
 // can cancel at any time, which returns a "cancelled" result.
-async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2, timeoutMs = 25000 } = {}) {
+async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2, timeoutMs = 15000 } = {}) {
   for (let attempt = 0; attempt < attempts; attempt++) {
     if (cancel.aborted) return { status: 'cancelled' };
     if (attempt) {
