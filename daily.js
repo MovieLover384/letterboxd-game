@@ -1,4 +1,4 @@
-import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=29';
+import { answerDetail, closestAnswer, dailyNumber, dailyQuestions, findAnswer, isNameKind, normalizeTitle, optionsFor, playableQuestions, scoreAnswer, tierExamples, unlimitedQuestions, utcDay } from './daily-core.mjs?v=30';
 import { apiUrl, warmUpApi } from './letterboxd-api.js?v=5';
 
 const $ = (id) => document.getElementById(id);
@@ -121,6 +121,10 @@ function restoreProgress() {
     for (const [index, answer] of saved.answers.entries()) {
       const question = questions[index];
       if (!question) break;
+      // An answer the AI approved is not in the catalog's list, and the shared answers have not
+      // loaded yet, so put the saved copy back before looking for it.
+      if (answer.questionId === question.id && answer.item && answer.item.id === answer.answerId)
+        addLearnedAnswer(question.id, answer.item, false);
       const item = optionsFor(question).find((option) => option.id === answer.answerId);
       // A story answer's creativity rating arrives from the server after the page loads, so a
       // saved score may be higher than the catalog alone gives. It can never be lower.
@@ -158,13 +162,14 @@ let resultShownAt = 0;
 let completeCelebrated = false;
 let artRun = 0;
 
-// Where to find an image for an answer: a film poster for movies and roles, a photo for people.
+// Where to find an image for an answer: a film poster for movies, characters and roles, a photo for
+// actors. The movie database has no pictures of fictional characters, and the actor's photo would show
+// the wrong person, so a character answer shows the poster of its film instead.
 function artTarget(question, item) {
   if (!isNameKind(question.kind)) return { kind: 'movie', id: item.id };
   if (['cast', 'collab'].includes(question.kind)) return { kind: 'person', id: item.id };
   if (question.kind === 'role') return { kind: 'movie', id: item.id - question.personId * 10000000 };
-  const personId = item.id - Number(question.id.split('-')[1]) * 1000000;
-  return personId > 0 ? { kind: 'person', id: personId } : null;
+  return { kind: 'movie', id: Number(question.id.split('-')[1]) };
 }
 
 async function loadResultArt(question, item) {
@@ -175,20 +180,30 @@ async function loadResultArt(question, item) {
   view.classList.toggle('has-art', Boolean(target));
   if (!target) return;
   art.classList.add('loading');
-  $('result-art-img').removeAttribute('src');
-  try {
-    const response = await fetch(apiUrl(`api/image?kind=${target.kind}&id=${target.id}`));
-    const { path } = await response.json();
+  const image = $('result-art-img');
+  image.removeAttribute('src');
+  image.alt = answerLabel(question, item);
+  // A slow or dropped lookup, or an image that fails to download, is tried again before the picture
+  // is given up on, because the result screen would otherwise show no poster for a film that has one.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, 700 * attempt));
     if (run !== artRun) return;
-    if (!path) throw new Error('No image');
-    const image = $('result-art-img');
-    image.alt = answerLabel(question, item);
-    image.onload = () => { if (run === artRun) art.classList.remove('loading'); };
-    image.onerror = () => { if (run === artRun) view.classList.remove('has-art'); };
-    image.src = `https://image.tmdb.org/t/p/w342${path}`;
-  } catch {
-    if (run === artRun) view.classList.remove('has-art');
+    try {
+      const response = await fetch(apiUrl(`api/image?kind=${target.kind}&id=${target.id}`),
+        { signal: AbortSignal.timeout(6000) });
+      const { path } = await response.json();
+      if (run !== artRun) return;
+      if (!path) continue;
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = `https://image.tmdb.org/t/p/w342${path}`;
+      });
+      if (run === artRun) art.classList.remove('loading');
+      return;
+    } catch { /* Try again. */ }
   }
+  if (run === artRun) view.classList.remove('has-art');
 }
 
 function burstConfetti(colors, count) {
@@ -255,7 +270,7 @@ let checkController = null;
 // so a failed check is tried once more before giving up. A slow check is not retried at once: the
 // server is still working on it, and a second request would only queue behind the first. The player
 // can cancel at any time, which returns a "cancelled" result.
-async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2, timeoutMs = 15000 } = {}) {
+async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 3, timeoutMs = 9000 } = {}) {
   for (let attempt = 0; attempt < attempts; attempt++) {
     if (cancel.aborted) return { status: 'cancelled' };
     if (attempt) {
@@ -274,9 +289,18 @@ async function verifyOnline(questionId, answer, cancel, onRetry, { attempts = 2,
         signal: attemptController.signal,
       });
       // A 400 carries a normal "invalid" result; busy or failing servers are worth another try.
-      if (response.ok || response.status === 400) return await response.json();
-      // Too many checks lately: asking again straight away only gets the same answer.
-      if (response.status === 429) return { status: 'unavailable', reason: 'busy' };
+      if (response.ok || response.status === 400) {
+        const result = await response.json();
+        // The server gave up waiting on a slow lookup but keeps what it fetched, so asking again is fast.
+        if (result.status === 'unavailable' && result.reason === 'slow' && attempt + 1 < attempts) continue;
+        return result;
+      }
+      // Too many checks from this address lately. The server's window slides, so asking again a moment
+      // later is tried automatically instead of making the player press Enter.
+      if (response.status === 429) {
+        if (attempt + 1 < attempts) { await new Promise((resolve) => setTimeout(resolve, 1200)); continue; }
+        return { status: 'unavailable', reason: 'busy' };
+      }
       throw new Error(`Verifier returned ${response.status}`);
     } catch (error) {
       if (cancel.aborted) return { status: 'cancelled' };
@@ -466,8 +490,11 @@ function showResult(question, item, points, reason) {
 function recordAnswer(item, reason = 'timeout') {
   if (!started || pendingResult || answers.length >= 5) return;
   const question = questions[answers.length];
+  // Whatever was accepted must be in the question's answer list, so the summary can show it.
+  if (item) addLearnedAnswer(question.id, item, false);
   const points = item ? scoreAnswer(question, item).points : 0;
-  answers.push({ questionId: question.id, answerId: item?.id ?? null, points });
+  answers.push({ questionId: question.id, answerId: item?.id ?? null, points,
+    ...(item ? { item } : {}) });
   deadline = null;
   pendingResult = { question, item, points, reason };
   saveProgress();
@@ -682,6 +709,8 @@ $('answer-form').addEventListener('submit', async (event) => {
   } else {
     $('answer-feedback').textContent = checked.reason === 'movie-not-found' ?
       'Could not identify that movie. Try its full title or release year.' :
+      checked.reason === 'not-confirmed' && checked.slow ?
+      `Found ${checked.title}, but the check took too long. Press Enter to try again.` :
       checked.reason === 'not-confirmed' ?
       (checked.unsure ? `Found ${checked.title}, but the check was not sure enough that it fits this prompt.` :
         `Found ${checked.title}, but could not confirm it fits this prompt.`) +

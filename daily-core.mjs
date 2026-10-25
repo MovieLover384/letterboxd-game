@@ -49,6 +49,27 @@ function buildAliases(movie) {
   }).filter(Boolean));
 }
 
+// The ways a title can be typed with its spaces dropped ("spiderman", "et"), kept per film for the
+// same reason as the aliases: scanning every film's names on each lookup is slow on a small server.
+const looseCache = new WeakMap();
+function looseAliases(movie) {
+  const cached = looseCache.get(movie);
+  if (cached && cached.alternates === movie.alternateTitles && cached.title === movie.title) return cached.names;
+  const names = new Set();
+  for (const name of aliases(movie)) {
+    names.add(name.replace(/ /g, ''));
+    // "et" is also "E.T." followed by more words, so leading single letters can be run together.
+    const words = name.split(' ');
+    let joined = '';
+    for (let index = 0; index < Math.min(words.length, 4) && words[index].length === 1; index++) {
+      joined += words[index];
+      if (index >= 1) names.add(joined);
+    }
+  }
+  looseCache.set(movie, { alternates: movie.alternateTitles, title: movie.title, names });
+  return names;
+}
+
 const SERIES = [
   { name: 'Madagascar', numerals: ['I','II','III'], films: [
     ['Madagascar',2005],['Madagascar: Escape 2 Africa',2008],
@@ -78,23 +99,11 @@ export function findMovie(question, answer) {
   // "yiyi", "spiderman" and "et" should find "Yi Yi", "Spider-Man" and "E.T. the
   // Extra-Terrestrial". These are only suggestions (loose), so the player confirms them.
   const squashed = query.replace(/ /g, '');
-  const looseName = (name) => {
-    if (name.replace(/ /g, '') === squashed) return true;
-    // "et" is also "E.T." followed by more words, so leading single letters can be run together.
-    const words = name.split(' ');
-    let joined = '';
-    for (let index = 0; index < Math.min(words.length, 4) && words[index].length === 1; index++) {
-      joined += words[index];
-      if (index >= 1 && joined === squashed) return true;
-    }
-    return false;
-  };
   const exact = [];
   const spaced = [];
   for (const movie of question.movies) {
-    const names = aliases(movie);
-    if (names.has(query)) exact.push(movie);
-    else if (squashed.length >= 2 && [...names].some(looseName)) spaced.push(movie);
+    if (aliases(movie).has(query)) exact.push(movie);
+    else if (squashed.length >= 2 && looseAliases(movie).has(squashed)) spaced.push(movie);
   }
   const found = exact.length ? exact : spaced;
   // An undated title usually means the best-known release. Years still select remakes.
@@ -198,9 +207,22 @@ function distance(a, b) {
 
 // `strict` is for film titles, where a suggestion should come from a real misspelling or a clear
 // beginning of the title, not from a short word that merely appears in it ("star" is not "Lucky Star").
+const FILLER_WORDS = new Set(['a', 'an', 'the', 'of']);
+const sortedCache = new Map();
+// The words of a title in alphabetical order without filler, so reordered titles compare equal.
+// The same labels are compared on every check, so each one is worked out once.
+function sortedWords(value) {
+  let words = sortedCache.get(value);
+  if (words === undefined) {
+    words = value.split(' ').filter((word) => !FILLER_WORDS.has(word)).sort().join(' ');
+    if (sortedCache.size > 300000) sortedCache.clear();
+    sortedCache.set(value, words);
+  }
+  return words;
+}
+
 function correctionScore(query, candidate, strict = false) {
-  const sorted = (value) => value.split(' ').filter((word) => !['a', 'an', 'the', 'of'].includes(word)).sort().join(' ');
-  if (sorted(query) === sorted(candidate)) return 1;
+  if (sortedWords(query) === sortedWords(candidate)) return 1;
   const whole = 1 - distance(query, candidate) / Math.max(query.length, candidate.length);
   // Character names are short: one extra letter can otherwise hide an obvious match.
   if (query.length >= (strict ? 6 : 4) && candidate.length >= 4 &&
@@ -210,28 +232,32 @@ function correctionScore(query, candidate, strict = false) {
   const queryWords = query.split(' ');
   // Match each typed word to a different title word. Reusing one short word
   // made unrelated inputs such as "la la la land" look like a close match.
-  const unusedWords = [...candidateWords];
-  const wordScores = queryWords.map((word) => {
-    let bestIndex = -1;
-    let bestScore = 0;
-    unusedWords.forEach((part, index) => {
-      // A typed word may stand for the beginning of a longer title word only when it is most of it.
-      const beginning = !strict || word.length >= Math.max(5, Math.ceil(part.length * .6));
-      const prefix = part.length > word.length && beginning ? part.slice(0, word.length) : part;
-      const score = 1 - distance(word, prefix) / Math.max(word.length, prefix.length);
-      if (score > bestScore) { bestIndex = index; bestScore = score; }
-    });
-    if (bestIndex >= 0) unusedWords.splice(bestIndex, 1);
-    return bestScore;
-  });
   const extraWords = Math.max(0, candidateWords.length - queryWords.length);
   // One typed word does not pick a title out of a longer one: "lord" is not "Metal Lords".
   const lonelyWord = strict && queryWords.length === 1 && candidateWords.length > 1;
-  const partial = !lonelyWord && queryWords.length <= candidateWords.length &&
-    wordScores.every((score) => score >= .7) &&
-    queryWords.some((word) => word.length >= 4)
-    ? wordScores.reduce((sum, score) => sum + score, 0) / wordScores.length * .94 *
-      Math.max(.7, 1 - extraWords * .1) : 0;
+  let partial = 0;
+  if (!lonelyWord && queryWords.length <= candidateWords.length &&
+    queryWords.some((word) => word.length >= 4)) {
+    const unusedWords = [...candidateWords];
+    let total = 0;
+    let matched = true;
+    for (const word of queryWords) {
+      let bestIndex = -1;
+      let bestScore = 0;
+      unusedWords.forEach((part, index) => {
+        // A typed word may stand for the beginning of a longer title word only when it is most of it.
+        const beginning = !strict || word.length >= Math.max(5, Math.ceil(part.length * .6));
+        const prefix = part.length > word.length && beginning ? part.slice(0, word.length) : part;
+        const score = 1 - distance(word, prefix) / Math.max(word.length, prefix.length);
+        if (score > bestScore) { bestIndex = index; bestScore = score; }
+      });
+      if (bestIndex >= 0) unusedWords.splice(bestIndex, 1);
+      // Every typed word must match one of the title's words, so the first miss ends the comparison.
+      if (bestScore < .7) { matched = false; break; }
+      total += bestScore;
+    }
+    if (matched) partial = total / queryWords.length * .94 * Math.max(.7, 1 - extraWords * .1);
+  }
   return Math.max(whole, partial);
 }
 

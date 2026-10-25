@@ -75,9 +75,11 @@ function json(request, response, status, value) {
   response.writeHead(status, headers(request));
   response.end(JSON.stringify(value));
 }
-// Requests allowed per address in ten minutes. Each endpoint counts separately, so poster lookups
-// during a long round cannot use up the answer checks.
-const limits = { image: 600, verify: 240, watchlist: 30, other: 400 };
+// Requests allowed per address in ten minutes. Only the watchlist lookup is limited, because it
+// scrapes Letterboxd. Answer checks, posters and the daily list are never turned away: a player,
+// or a group of players behind one address, must always get their answer checked, and repeated
+// checks of the same film are cheap because their results are cached.
+const limits = { watchlist: 30 };
 // Cloudflare sits in front of the host and sets the visitor's real address, which a visitor cannot
 // override. Without it every player can share the proxy's address, and one busy minute then locks
 // out everybody, so fall back to the first forwarded address only when it is missing.
@@ -89,8 +91,8 @@ function clientAddress(request) {
 function permit(request, pathname) {
   const origin = request.headers.origin;
   if (origin && !allowedOrigins.has(origin)) return false;
-  const bucket = pathname === '/api/image' ? 'image' : pathname === '/api/verify' ? 'verify' :
-    pathname.startsWith('/api/watchlist') ? 'watchlist' : 'other';
+  const bucket = pathname.startsWith('/api/watchlist') ? 'watchlist' : 'other';
+  if (!limits[bucket]) return true;
   const address = clientAddress(request);
   const key = `${bucket}:${address}`;
   const now = Date.now();

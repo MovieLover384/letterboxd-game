@@ -5,7 +5,8 @@ const rules = {
   season:/\b(spring|summer|autumn|fall|winter)\b/i,
   'one-word':/^[\p{L}\p{N}'’\-]+$/u,
   city:/\b(new york|paris|london|tokyo|rome|chicago|berlin|amsterdam|las vegas|los angeles|madrid|venice|seoul|mumbai)\b/i,
-  night:/\bnight\b/i,
+  // "Night" also starts joined words such as Nightcrawler and Nightmare, but must not match Knight.
+  night:/(?<![\p{L}])night/iu,
   question:/\?/,
   family:/\b(mother|father|mom|dad|brother|sister|son|daughter|grandma|grandpa|family)\b/i,
   food:/\b(cake|pizza|chocolate|candy|bread|pie|soup|sushi|coffee|tea|wine|beer|milk|banana|apple|cherry|lemon|sugar|sausage|burger|hamburger|steak|bacon|egg|eggs|cookie|cookies|donut|doughnut|pasta|spaghetti|rice|noodle|noodles|fish|chicken|turkey|beef|pork|sandwich|hot dog|hotdog|ice cream|water|juice|whiskey|whisky|vodka|champagne|rum|gin|honey|salt|pepper)\b/i,
@@ -19,7 +20,8 @@ const rules = {
   place:/\b(america|american|africa|african|china|chinese|india|indian|japan|japanese|russia|russian|italy|italian|spain|spanish|france|french|mexico|mexican|brazil|texas|california|hawaii|alaska|vegas|ireland|irish|scotland|england|english|egypt|vietnam|korea|jamaica|cuba|canada|germany|german|berlin|manhattan|brooklyn|hollywood|miami|detroit|boston|vienna|moscow|casablanca)\b/i,
   time:/\b(day|days|hour|hours|midnight|morning|tomorrow|yesterday|today|forever|week|weekend|year|years|time|times|minute|minutes|dawn|dusk|evening)\b/i,
   love:/\b(love|loves|lover|lovers|kiss|kisses|romance|wedding|bride|married|marriage|date|valentine)\b/i,
-  death:/\b(death|dead|die|dies|dying|kill|kills|killer|killers|murder|blood|grave|bloody|deadly)\b/i,
+  // Also joined words that start with a deadly word, such as Bloodshot, Deadpool, and Killjoy.
+  death:/\b(death|dead|die|dies|dying|kill|kills|killer|killers|murder|blood|grave|bloody|deadly)\b|(?<![\p{L}])(?:blood|dead|death|kill|murder)\p{L}/iu,
   space:/\b(star|stars|moon|planet|planets|space|galaxy|universe|earth|mars|cosmos|alien|aliens)\b/i,
   water:/\b(sea|ocean|river|lake|island|islands|beach|water|bay|wave|waves|coast|bridge|pool|swamp)\b/i,
   fire:/\b(fire|flame|flames|ice|frozen|burn|burning|smoke|volcano|ash|ashes)\b/i,

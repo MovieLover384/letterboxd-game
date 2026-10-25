@@ -127,7 +127,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
       if (attempt) await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
       let retryable = true;
       try {
-        const response = await fetchImpl(url, { signal: AbortSignal.timeout(6000) });
+        const response = await fetchImpl(url, { signal: AbortSignal.timeout(4000) });
         if (response.ok) return await response.json();
         failure = new Error(`TMDB returned ${response.status}`);
         retryable = response.status === 429 || response.status >= 500;
@@ -140,6 +140,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     throw failure;
   }
 
+  const LOOKUP_BUDGET_MS = 2000;
   async function resolveMovie(input) {
     const match = input.match(/^(.+?)\s*(?:\((\d{4})\)|\s+(\d{4}))$/);
     const title = match ? match[1] : input;
@@ -162,8 +163,12 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     const released = (movie) => movie.id && movie.release_date &&
       movie.release_date <= today() && !movie.adult &&
       (!year || Number(movie.release_date.slice(0, 4)) === year);
+    // "Sharknado 3" is the film "Sharknado 3: Oh Hell No!", so a numbered title also matches by
+    // the part before its subtitle, the same way catalog titles do.
+    const matchesName = (name = '') => squash(name) === squashedKey ||
+      (/\b(?:[2-9]|II|III|IV|V)$/.test(name.split(':')[0]) && squash(name.split(':')[0]) === squashedKey);
     const matchesTitle = (movie) => released(movie) &&
-      [movie.title, movie.original_title].some((name) => squash(name || '') === squashedKey);
+      [movie.title, movie.original_title].some(matchesName);
     // Films actually titled this way (English or original title) always beat films that
     // only have it as a foreign or alternate title, however many votes those have.
     const direct = search.results.filter(matchesTitle);
@@ -184,7 +189,11 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
           return alternatives.titles?.some(({ title }) => normalizeTitle(title) === key) ? movie : null;
         } catch { return null; }
       }));
-      const [localized, alternates] = await Promise.all([localizedSearch, alternateSearch]);
+      // These extra lookups only widen the search, so a slow one is not waited for. It carries on in
+      // the background and fills the cache for the next try.
+      const within = (pending) => Promise.race([pending, new Promise((resolve) =>
+        setTimeout(() => resolve([]), LOOKUP_BUDGET_MS))]);
+      const [localized, alternates] = await Promise.all([within(localizedSearch), within(alternateSearch)]);
       exact.push(...localized.flat());
       // Alternate titles only count when no film has the title itself in another language.
       if (!exact.length || Math.max(...exact.map((movie) => movie.vote_count || 0)) < 1000)
@@ -257,11 +266,14 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
   // A slow reply is not waited out: if the first request has not answered after a few seconds, a
   // second one starts beside it and the first answer to arrive wins. A failed request is replaced
   // at once instead of after a pause.
-  const AI_HEDGE_MS = 3000;
+  // The whole check, retries included, never takes longer than AI_LIMIT_MS.
+  const AI_HEDGE_MS = 2000;
+  const AI_LIMIT_MS = 5000;
   function askDeepSeek(question, movie, details) {
     return new Promise((resolve, reject) => {
       let started = 0, failed = 0, settled = false, hedge;
-      const finish = (settle, value) => { settled = true; clearTimeout(hedge); settle(value); };
+      const limit = setTimeout(() => { if (!settled) finish(reject, new Error('DeepSeek timed out')); }, AI_LIMIT_MS);
+      const finish = (settle, value) => { settled = true; clearTimeout(hedge); clearTimeout(limit); settle(value); };
       const launch = () => {
         if (settled || started >= 3) return;
         started++;
@@ -283,7 +295,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
 
   // A prompt about the title itself: only the title text matters, so there is no plot to fetch and
   // the reply is short.
-  const TITLE_JUDGE = 'You judge whether a film title fits a trivia prompt about its title. Use only the title text supplied (title and original title), never the plot. Answer yes when a word or name in the title clearly belongs to the category in the prompt, including less common examples that a short word list could miss: for a city prompt any real city such as Stockholm or Lagos counts, and for a profession prompt any real profession counts. The word must be a real word of the title, so a word hidden inside another word, like war in Award, does not count. Follow any note in brackets in the prompt: for a number prompt a sequel number such as the 3 in Saw 3 or Part II does not count. Think first and write the reason before the verdict, and make sure the verdict agrees with the reason. Return JSON only with the keys in this order: {"reason":"...","confidence":"high"|"medium"|"low","fits":true|false}. Write the reason as one short sentence in plain English that names the word in the title. Never use dashes, semicolons, or quotation marks. A good reason for a no looks like this: The title Bleeder has no color word in it.';
+  const TITLE_JUDGE = 'You judge whether a film title fits a trivia prompt about its title. Use only the title text supplied (title and original title), never the plot. Answer yes when a word or name in the title clearly belongs to the category in the prompt, including less common examples that a short word list could miss: for a city prompt any real city such as Stockholm or Lagos counts, and for a profession prompt any real profession counts. A joined word counts when the category word is clearly one of its two parts, like Blood in Bloodshot, Dead in Deadpool, or Night in Nightcrawler. A word merely hidden inside an unrelated word, like war in Award, does not count. Follow any note in brackets in the prompt: for a number prompt a sequel number such as the 3 in Saw 3 or Part II does not count. Think first and write the reason before the verdict, and make sure the verdict agrees with the reason. Return JSON only with the keys in this order: {"reason":"...","confidence":"high"|"medium"|"low","fits":true|false}. Write the reason as one short sentence in plain English that names the word in the title. Never use dashes, semicolons, or quotation marks. A good reason for a no looks like this: The title Bleeder has no color word in it.';
 
   async function askDeepSeekTitleOnce(question, movie) {
     const response = await fetchImpl('https://api.deepseek.com/chat/completions', {
@@ -298,7 +310,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
             film: { title: movie.title, originalTitle: movie.originalTitle || movie.title, year: movie.year } }) },
         ],
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(AI_LIMIT_MS),
     });
     if (!response.ok) throw new Error(`DeepSeek returned ${response.status}`);
     const data = await response.json();
@@ -327,7 +339,7 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
               keywords: details.keywords?.keywords?.map(({ name }) => name).slice(0, 35) || [] } }) },
         ],
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(AI_LIMIT_MS),
     });
     if (!response.ok) throw new Error(`DeepSeek returned ${response.status}`);
     const data = await response.json();
@@ -472,7 +484,22 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     return { ...verdict, source: 'deepseek', votes };
   }
 
+  // A check never keeps the player waiting longer than this. The lookups it started carry on in the
+  // background and fill the caches, so asking again a moment later is usually fast.
+  const CHECK_LIMIT_MS = 7000;
   async function verify(questionId, answer) {
+    let timer;
+    const slow = new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ status: 'unavailable', reason: 'slow' }), CHECK_LIMIT_MS);
+    });
+    const checking = verifyUnlimited(questionId, answer);
+    // The race hands the result on, so a check that fails after the limit must not go unhandled.
+    checking.catch(() => {});
+    try { return await Promise.race([checking, slow]); }
+    finally { clearTimeout(timer); }
+  }
+
+  async function verifyUnlimited(questionId, answer) {
     const question = questions.get(questionId);
     if (!question || typeof answer !== 'string' || !normalizeTitle(answer) || answer.length > 160)
       return { status: 'invalid' };
@@ -583,10 +610,17 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     }
     if (inFlight.has(pair)) return inFlight.get(pair);
     const pending = (async () => {
-      const checked = await inspectMovie(question, movie);
+      let checked;
+      try { checked = await inspectMovie(question, movie); }
+      catch (error) {
+        // An AI check that runs past its time limit is reported as unsure, not saved, so the player
+        // can press Enter to try again instead of waiting on a failed request.
+        if (error.message !== 'DeepSeek timed out') throw error;
+        checked = { fits: false, unsure: true, source: 'timeout', votes: movie.votes };
+      }
       if (!checked.fits) return { status: 'rejected', reason:'not-confirmed', title:movie.title,
         ...(checked.source === 'deepseek' && checked.evidence ? { detail: checked.evidence } : {}),
-        ...(checked.unsure ? { unsure: true } : {}) };
+        ...(checked.unsure ? { unsure: true } : {}), ...(checked.source === 'timeout' ? { slow: true } : {}) };
       const item = { ...movie, votes: checked.votes,
         ...(checked.scoreFloor ? { scoreFloor: checked.scoreFloor } : {}) };
       if (!resolved.corrected && normalizeTitle(answer) !== normalizeTitle(movie.title) &&
@@ -617,11 +651,19 @@ export async function createVerifier({ catalog, dataFile, tmdbKey, deepseekKey,
     if (!['movie', 'person'].includes(kind) || !Number.isInteger(id) || id <= 0) return null;
     const key = `${kind}:${id}`;
     const cached = images.get(key);
-    if (cached && Date.now() - cached.time < 86400000) return cached.path;
+    // A missing picture is only remembered briefly, in case the lookup was a one-off failure.
+    if (cached && Date.now() - cached.time < (cached.path ? 86400000 : 300000)) return cached.path;
     const localPoster = kind === 'movie' ? moviePosters.get(id) : null;
     if (localPoster) return localPoster;
     const details = await tmdb(`/${kind}/${id}`);
-    const path = (kind === 'movie' ? details.poster_path : details.profile_path) || null;
+    let path = (kind === 'movie' ? details.poster_path : details.profile_path) || null;
+    // Some films have posters but no default one set, so take the best of the poster list.
+    if (!path && kind === 'movie') {
+      try {
+        const { posters = [] } = await tmdb(`/movie/${id}/images`, { include_image_language: 'en,null' });
+        path = posters.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))[0]?.file_path || null;
+      } catch { /* No poster is still a valid answer. */ }
+    }
     if (images.size > 2000) images.delete(images.keys().next().value);
     images.set(key, { time: Date.now(), path });
     return path;
